@@ -66,17 +66,17 @@ function or use it in a loop?
 ```{r try_function, error=TRUE}
 # Place code within function
 
-gap_means <- function(data, grouping_variable, summary_column){
+gap_mean <- function(data, grouping_variable, summary_column){
   data %>% 
   group_by(grouping_variable) %>% 
   summarise(mean = mean(summary_column, na.rm = T))
 }
 
 #Does it work?
-gap_means(gapminder, year, lifeExp)
+gap_mean(gapminder, year, lifeExp)
 
 #What about if we place the arguments in quotes?
-gap_means(gapminder, "year", "lifeExp")
+gap_mean(gapminder, "year", "lifeExp")
 
 #Another example - What if tried to build a generic plotting function for all of the above dataset?
 plot_fun <- function(data, x, y){
@@ -85,14 +85,13 @@ plot_fun <- function(data, x, y){
   geom_point() 
 }
 
-plot(meanLE_continent, x = continent, y = meanLE)
-plot(meanLE_continent, x = "continent", y = "meanLE")
-
+plot_fun(meanLE_continent, x = continent, y = meanLE)
+plot_fun(meanLE_continent, x = "continent", y = "meanLE")
 ```
 
 ALSO - a problem if you want to use dplyr functions in loops
 
-```{r try_loop}
+```{r try_loop, message=FALSE}
 columns <- c("lifeExp", "pop", "gdpPercap")
 out <- rep(list(NULL), 3)
 
@@ -126,11 +125,11 @@ mtcars[hp > 250, ] # Does this work?
                    # NO! hp is not defined in our environment
 
 #Other base R NSE functions include:
-transform()
-lm()
-with()
-#and the old school (for those of us who learnt R way way before the tidyverse!):
-attach()
+# transform()
+# lm()
+# with()
+# and the old school (for those of us who learnt R way way before the tidyverse!):
+# attach()
 ```
 
 Much more to learn about NSE!! See list of references at end.
@@ -208,7 +207,7 @@ data2 %>% mutate(y = x / n) %>% pull(y)
 
 > #### SOLUTION - Be explicit in your code
 >
-> Use the .data\$ or .env\$ pronouns to explicitly associate variables
+> Use the `.data$` or `.env$` pronouns to explicitly associate variables
 > to data frames or the global environment:
 
 ```{r unexp_mask_soln}
@@ -220,40 +219,51 @@ data2 %>% mutate(y = .data$x / .env$n) %>% pull(y)
 
 ### **Indirection**
 
-Occurs when data-variables can't get through functions/loops - because
-the function expects an environment variable:
+Occurs when data-variables can't get through functions/loops because the
+function expects an environment variable:
 
 ```{r indrection}
-# Example of indirection = function we tried to run above
-gap_means <- function(data, grouping_variable, summary_column){
+# Example of indirection = function we tried to run above - DOESN'T WORK
+gap_mean <- function(data, grouping_variable, summary_column){
   data %>% 
   group_by(grouping_variable) %>% 
   summarise(mean = mean(summary_column, na.rm = T))
 }
 
-#It doesn't work!!
-gap_means(gapminder, year, lifeExp)
+#It doesn't work
+gap_mean(gapminder, year, lifeExp)
 ```
 
 Inside the function `grouping_variable` and `summary_column` are
-environment variables. But when you call the function - `year` and
+environment variables. But when you call the function `year` and
 `lifeExp` are data variables.
 
-> #### SOLUTION - use the curly-curly operator '{{ }}' 
+Data-masked code needs to be *delayed* and *transported* to the data
+context. Behind the scenes, dplyr verbs achieve this by capturing the
+blueprint of your code, and resuming its evaluation inside the data
+mask. The example above fails because `group_by()` is capturing the
+wrong piece of blueprint.
+
+> #### SOLUTION - use the curly-curly operator '{{ }}'
+
+> The curly-curly `{{ }}` operator allows you to *tunnel* data variable
+> through functions. It acts `{{ }}` as a wrapper for lower level
+> operators that function to **quote-and-unquote** the expression
+> pattern:
 >
-> The curly-curly operator allows you to *tunnel* data variable through
-> functions:
+> `enquo()` - delays the interpretation of code and captures its
+> blueprint and `!!` - which modifies those blueprints.
 
 ```{r indrection_soln}
-gap_means <- function(data, grouping_variable, summary_column){
+gap_mean <- function(data, grouping_variable, summary_column){
   data %>% 
   group_by({{ grouping_variable }}) %>% 
   summarise(mean = mean({{ summary_column }}, na.rm = T))
 }
 
-#It works!!
-gap_means(gapminder, year, lifeExp)
-gap_means(gapminder, continent, pop)
+#It works!
+gap_mean(gapminder, year, lifeExp)
+gap_mean(gapminder, continent, pop)
 ```
 
 What about with multiple grouping variables?? Use `across()`
@@ -266,60 +276,64 @@ gap_means <- function(data, grouping_variables, summary_columns){
   # can also write: summarise(across({{ summary_columns }}, list(mean)))
 }
 
-# It works
+# It works!
 gap_means(gapminder, c(country, year), c(lifeExp, pop, gdpPercap))
 
 ```
 
-### Dynamic naming of variables in functions 
+### Naming of variables in functions
 
-> #### Solution - use the walrus operator :=
+> #### Solution - use the walrus operator `:=` or `.names = ""` 
 >
-> `:=` is named the "Walrus operator" and enables dynamic naming of
-> variables with tidy evaluation
+> `:=` is the "Walrus operator" and enables dynamic naming of variables
+> with tidy evaluation - used when there is only variable in the
+> function
+>
+> use `.names = ""` when there are multiple variables
 
 In the above example we most likely want to improve on the automatic
-column names that our new mean columns are given. We might then try
-something like this:
+column names that our new mean columns are given:
 
-```{r, error=TRUE}
-# This DOESN'T WORK!
-gap_means <- function(data, grouping_variables, summary_columns){
-  data %>% 
-  group_by(across({{ grouping_variables }})) %>% 
-  summarise({{ summary_columns }} = across({{ summary_columns }}, ~ mean(., na.rm = T)))
-}
-
+```{r, name_assignment}
 # Use the Walrus operator and syntax similar to the glue package
-gap_means <- function(data, grouping_variables, summary_columns){
+gap_mean_name <- function(data, grouping_variable, summary_column){
   data %>% 
-  group_by(across({{ grouping_variables }})) %>% 
-  summarise("mean_{{ summary_columns }}" := across({{ summary_columns }}, list(mean)))
+  group_by({{ grouping_variable }}) %>% 
+  summarise("mean_{{ summary_column }}" := mean({{ summary_column }}, na.rm = T))
 }
 
-# It works
-gap_means(gapminder, c(country, year), c(lifeExp, pop, gdpPercap))
+gap_mean_name(gapminder, country, lifeExp)
 
+# Use the .names = "" option
+gap_mean_name_multicols <- function(data, grouping_variable, summary_columns) {
+  data %>%
+    group_by(across({{grouping_variable}})) %>%
+     summarise(across({{ summary_columns }},
+         ~ mean(., na.rm = TRUE), .names = "mean_{.col}"), .groups = "drop")
+}
+
+gap_mean_name_multicols(gapminder, c(continent, year), c(lifeExp, pop, gdpPercap))
 ```
 
 ### Indirection - What if you have string inputs!?
 
-> #### SOLUTION - use .data[[ var ]] to explicitly subset your data
+> #### SOLUTION - use data sub-setting explicitly with: `.data[[ var ]]`
 >
-> When you have an env-variable that is a character vector and you wish
-> to input this into a function, you need to index into the `.data`
-> pronoun with `[[`.
+> When you have a character env-variable and you wish to input this into
+> a function, you need to index into the `.data` pronoun with `[[`.
+>
+> If you want to assign name then use `:=` + `{ }` (***single curly
+> brackets***)
 
 ```{r indirection_with_strings}
 gap_means <- function(data, grouping_variable, summary_column){
   data %>% 
   group_by(.data[[grouping_variable]]) %>% 
-  summarise(mean = mean(.data[[summary_column]], na.rm = T))
+  summarise("mean_{summary_column}" := mean(.data[[summary_column]], na.rm = T))
 }
 
-#It works!!
+#It works!
 gap_means(gapminder, "year", "lifeExp")
-
 ```
 
 -   Note that `.data` is not a data frame; it's a special construct, a
@@ -332,15 +346,43 @@ gap_means(gapminder, "year", "lifeExp")
     functions that ARE ALSO DATA MASKING functions! This can be good
     when your code will be used by non-R users or in production.
 
+### Alternative - sometimes needed for string inputs loops
+
+> #### SOLUTION - use !!sym
+>
+> `sym()` creates a symbol (a kind of defused expression) from a string
+> (very similar to `base::as.symbol()` which itself an alias for
+> `base::as.name()`). The injection operator `!!` doesn't do anything by
+> itself and is not a real operator. It tells `summarise()` to do
+> something though, because `summarise()` is designed to recognize it.
+> What it tells to `summarise()` is to act as if `!!x` was replaced by
+> the quoted content of x.
+
+```{r indirection_with_strings_multiplegroupbys}
+
+#see -issues below
+```
+
+```{r for_loop_solved}
+# This is the solution - need to use rlang::sym
+columns <- c("lifeExp", "pop", "gdpPercap")
+out <- rep(list(NULL), 3)
+
+for(i in seq_along(columns)){
+  out[[i]] <- gapminder %>% 
+    summarise("mean_{ columns[[i]] }" := mean(!!sym(columns[[i]]), na.rm = T))
+}
+
+unlist(out)
+
+```
+
+For more information see help("sym") and help("!!") and references
+listed below.
+
 ------------------------------------------------------------------------
 
-## Tidy Selection Problems and Solutions
-
-Data masking makes it easy to compute on values within a dataset. Tidy
-selection is a complementary tool that makes it easy to work with the
-columns of a dataset.
-
-### The tidyselect DSL
+## Tidy Selection: Problems and Solutions
 
 Underneath all functions that use tidy selection is the
 [tidyselect](https://tidyselect.r-lib.org/) package. It provides a
@@ -358,54 +400,55 @@ by name, position, or type. For example:
 
 -   `select(df, where(is.numeric))` selects all numeric columns.
 
-You can see more details in `?dplyr_tidy_select`.
-
-### Tidy Selection
-
 As with data masking, tidy selection makes a common task easier at the
-cost of making a less common task harder. When you want to use tidy
-select indirectly with the column specification stored in an
-intermediate variable, you'll need to learn some new tools. Again, there
-are two forms of indirection:
+cost of making a less common task harder.
 
--   When you have the data-variable in an env-variable that is a
-    function argument, you use the same technique as data masking: you
-    **embrace** the argument by surrounding it in doubled braces.
+The solutions are similar to those described:
 
-    The following function subsets a data frame using numerical row
-    indexing and numbers or names for column indexing:
-
-    ```{r, results = FALSE}
-    rectangle <- function(data, columns, row_start, row_end) {
-      data %>% 
-        select({{ columns }}) %>% 
-        slice(row_start:row_end)
-    }
-    ```
+1.  Be explicit - use .`data$` or `.env$` pronouns to avoid selecting by
+    a variable name that also exists in your environment
 
     ```{r}
-    rectangle(starwars, height:eye_color, 1, 5)
+
+    ```
+
+2.  Embrace the function input vars using `{{ }}` - when the input is
+    not a string input
+
+    ```{r slice_example}
+    slice_fun <- function(data, grouping_variable, columns, rows) {
+      data %>% 
+        group_by({{ grouping_variable }}) %>% 
+        select({{ columns }}) %>% 
+        slice(rows)
+    }
+    slice_fun(gapminder, continent, lifeExp:gdpPercap, 1)
     ```
 
 -   When you have an env-variable that is a character vector, you need
     to use `all_of()` or `any_of()` depending on whether you want the
     function to error if a variable is not found.
 
-    The following code uses `all_of()` to select all of the variables
-    found in a character vector; then `!` plus `all_of()` to select all
-    of the variables *not* found in a character vector:
-
     ```{r}
-    rectangle <- function(data, columns, row_start, row_end) {
-          data %>% 
-            select(all_of(columns)) %>% 
-            slice(row_start:row_end)
-        }
+    slice_character <- function(data, grouping_variable, columns, row_start, row_end) {
+      data %>% 
+        group_by({{ grouping_variable }}) %>% 
+        select(all_of(columns)) %>% 
+        slice(row_start:row_end)
+    }
+    slice_character(gapminder, year, c("pop", "lifeExp"), 1, 3)
     ```
 
+-   And if you don't want to propagate data masking:
+
     ```{r}
-    vars <- c("height", "mass")
-    rectangle(starwars, vars, 1, 5)
+    slice_character_subset <- function(data, grouping_variable, columns, row_start, row_end) {
+      data %>% 
+        group_by(.data[[ grouping_variable ]]) %>% 
+        select(all_of(columns)) %>% 
+        slice(row_start:row_end)
+    }
+    slice_character_subset(gapminder, "country", c("pop", "lifeExp"), 1, 3)
     ```
 
 ## Using tidy evaluation in other {tidyverse} package functions
@@ -421,19 +464,44 @@ scatter_plot <- function(data_frame, x_axis, y_axis) {
 }
 ```
 
-```{r}
-scatter_plot(starwars, height, mass)
-```
-
-> If you'd like to learn more about the underlying theory, or precisely
-> how it's different from non-standard evaluation, we recommend that you
-> read the Metaprogramming chapters in [*Advanced
-> R*](https://adv-r.hadley.nz).
-
-So what about enquo() and !! operators and others
-
-Do you even need to use Tidy Eval!
-
 ## References
 
 <https://www.brodieg.com/2020/05/05/on-nse/>
+
+=========================================
+
+```{r}
+# THESE ARE PROBLEMS I CAN'T WORK OUT !!
+
+
+# WITH DATA SUBSETTING - NAMING WORKS FOR MULTIPLE NAMES!!?
+means <- function(data, grouping_variable, summary_column){
+  data %>%
+    group_by(.data[[grouping_variable]]) %>%
+    summarise(.data[[summary_column]], mean(.,  na.rm = TRUE), .names = "mean_{.col}", .groups = "drop")
+}
+gap_means(gapminder, "year", "lifeExp")
+
+
+# 3.  Data subsetting with multiple group_bys and summarises!! - Works differently
+group_names<-c("continent")
+summ_names <- c("lifeExp", "pop")
+
+gap_means_multigps <- function(data, grouping_variables, summary_columns){
+  data %>%
+    group_by(across(all_of(grouping_variables))) %>%
+    #summarise_at(vars(summary_columns), mean) # --> THIS WORKS
+    #Experimenting below
+    summarise(across(starts_with("pop")), mean)
+}
+gap_means_multigps(gapminder, group_names, summ_names)
+
+gap_means_multigps(gapminder, group_names)
+
+gapminder %>%
+  group_by(across(all_of(group_names))) %>%
+  #summarise_at(vars(summ_names), mean) # --> THIS WORKS
+  #Experimenting below
+  summarise(across(starts_with("pop")), mean)
+```
+
