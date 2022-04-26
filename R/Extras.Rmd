@@ -1,0 +1,140 @@
+---
+title: "Tidyverse Programming Extras"
+output: html_document
+date: '2022-04-26'
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(gapminder)
+```
+
+## What about with multiple data variables?
+
+> #### SOLUTION A - Pass the dots `(…)` 
+>
+> NOTE - pass the dots `(…)` is also very useful for single data
+> variable functions
+
+```{r pass_the_dots}
+#The dots are the last input parameter in the function call
+grouped_mean_dots <- function(data, summary_column, ...) {
+  data %>%
+    group_by(...) %>%
+    summarise(mean = mean({{ summary_column }}, na.rm = T))
+}
+
+grouped_mean_dots(gapminder, pop, continent, year)
+
+# Careful with string input vs data variables
+# What is this doing?
+grouped_mean_dots(gapminder, pop, "year")
+#c.f.
+mean(gapminder$pop)
+```
+
+-   Note that using `(…)` perpetuates NSE/Data-masking to your bespoke
+    function. The coded blueprint is inherited (no need for any tidy
+    eval).
+
+-   Can only pass the dots once in a function!
+
+> #### SOLUTION B - use across()
+
+```{r multi_gps}
+gap_means <- function(data, grouping_variables, summary_columns){
+  data %>% 
+    group_by(across({{ grouping_variables }})) %>% 
+    summarise(across({{ summary_columns }}, ~ mean(., na.rm = T))) 
+}
+
+gap_means(gapminder, c(country, year), c(lifeExp, pop, gdpPercap))
+
+```
+
+> #### For the above - name the columns with `.names = ""` option
+>
+> use `.names = ""` when there are multiple variables (:=
+
+```{r multi_gps_naming}
+# Use the .names = "" option 
+gap_mean_name_multicols <- function(data, grouping_variable, summary_columns) {
+  data %>% 
+    group_by(across({{grouping_variable}})) %>% 
+    summarise(across({{ summary_columns }}, 
+                     ~ mean(., na.rm = TRUE), 
+                     .names = "mean_{.col}"), 
+                     .groups = "drop") }
+
+gap_mean_name_multicols(gapminder, c(continent, year), c(lifeExp, pop, gdpPercap))
+
+```
+
+> #### SOLUTION C - use scoped dplyr verbs e.g. `summarise_at()`
+
+```{r scoped_verbs_strings}
+group_names<-c("continent")
+summ_names <- c("lifeExp", "pop")
+
+gap_means_multigps <- function(data, grouping_variables, summary_columns){
+  data %>%
+    group_by(across(all_of(grouping_variables))) %>%
+    summarise_at(vars(summary_columns), mean) # --> THIS WORKS
+    #Experimenting below
+    summarise(across(starts_with("pop")), mean)
+}
+gap_means_multigps(gapminder, group_names, summ_names)
+
+
+gap_means_multigps <- function(data, grouping_variables, summary_columns){
+  data %>%
+    group_by(across(all_of(grouping_variables))) %>%
+    summarise_at(vars(summary_columns), mean) # --> THIS WORKS
+    #Experimenting below
+    summarise(across(starts_with("pop")), mean)
+}
+
+
+gap_means_multigps(gapminder, group_names)
+
+gapminder %>%
+  group_by(across(all_of(group_names))) %>%
+  #summarise_at(vars(summ_names), mean) # --> THIS WORKS
+  #Experimenting below
+  summarise(across(starts_with("pop")), mean)
+```
+
+## Do you even need Tidy Eval?
+
+#### Assume fixed column names
+
+-   Need to add check for those columns in the function
+
+```{r fixed_col_names}
+# Calculate lifeExp / pop (a contrived example)
+
+life_v_pop <- function(data){
+  if(all(c("lifeExp", "pop") %in% names(data))) {
+    data %>% mutate(life_v_pop = lifeExp / pop)
+  
+  } else {
+    stop("dataset must contain `lifeExp` and `pop` columns")
+  }
+}
+  
+life_v_pop(gapminder)
+life_v_pop(mtcars)
+```
+
+-   Input checking is important. Domain logic is necessary.
+
+#### Columnwise mapping (and scoped dplyr verbs)
+
+-   apply family from base R
+
+-   Purrr package (map\_ functions)
+
