@@ -414,6 +414,10 @@ gapminder %>%
 
 ```
 
+## What about with multiple data variables? - see `Extras.Rmd`
+
+## Do you even need Tidy Eval? - see `Extras.Rmd`
+
 ## References
 
 <https://www.brodieg.com/2020/05/05/on-nse/>
