@@ -46,10 +46,10 @@ isn't good coding practice. When we find ourselves repeating code we
 should look at using some kind of iteration tool or writing a bespoke
 function.
 
-Also, might want to get (and plot) the means of population size and
-gdpPercap as well as lifeExp across continents and years. Or we might
-want to get means by countries and years. We can't (shouldn't!) repeat
-the above code that many times! We need to write re-usable code.
+Also, might want to get (and plot) the means of population size and GDP
+per capita as well as life expectancy across continents and years. Or we
+might want to get means by countries and years. We shouldn't repeat the
+above code that many times! We need to write re-usable code.
 
 SO let's see what happens when we try to turn the above code into a
 function (or use it in a loop)?
@@ -331,40 +331,31 @@ those described:
     slice_fun(gapminder, continent, lifeExp:gdpPercap, 1)
     ```
 
--   When you have a string input, you need to use `all_of()` or
-    `any_of()`
-
-    ```{r slice_example_string}
-    slice_character <- function(data, grouping_variable, columns, row_start, row_end) {
-      data %>% 
-        group_by({{ grouping_variable }}) %>% 
-        select(all_of(columns)) %>% 
-        slice(row_start:row_end)
-    }
-    slice_character(gapminder, year, c("pop", "lifeExp"), 1, 3)
-    ```
-
 -   Alternatively - if you have string input (or don't want to propagate
-    data masking):
+    data masking) then use `.data[[ ]]`:
 
     ```{r}
-    slice_character_subset <- function(data, grouping_variable, columns, row_start, row_end) {
+    slice_character_subset <- function(data, column, row_start, row_end) {
       data %>% 
-        group_by(.data[[ grouping_variable ]]) %>% 
-        select(all_of(columns)) %>% 
+        select(.data[[column]]) %>% 
         slice(row_start:row_end)
     }
-    slice_character_subset(gapminder, "country", c("pop", "lifeExp"), 1, 3)
+    slice_character_subset(gapminder, "pop", 1, 10)
     ```
 
 ## Using tidy evaluation in other {tidyverse} package functions: ggplot
 
 Finally, we can apply this same logic to other {tidyverse} package
-functions. So we can plot our grouped means table from above:
+functions.
+
+-   either embrace `{{ }}` the data variable names
+
+-   or subset the data using `.data [[ ]]` and input strings to the
+    function call
 
 ```{r}
 scatter_plot <- function(data_frame, x_axis, y_axis ) {
-  ggplot(data_frame, aes(y = {{ y_axis }}, x = {{ x_axis }})) +
+  ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
     geom_point(alpha = 0.5)
 }
 
@@ -376,6 +367,15 @@ gapminder %>%
   gap_mean_name(continent, gdpPercap) %>% 
   scatter_plot(continent, mean_gdpPercap)
 
+
+scatter_plot <- function(data_frame, x_axis, y_axis ) {
+  ggplot(data_frame, aes(x = .data[[x_axis]], y = .data[[y_axis]])) +
+    geom_point(alpha = 0.5)
+}
+
+gapminder %>% 
+  gap_mean_name(continent, gdpPercap) %>% 
+  scatter_plot("continent", "mean_gdpPercap")
 ```
 
 ## What about with multiple data variables? - see `Extras.Rmd`
@@ -387,8 +387,8 @@ gapminder %>%
 Type `?dplyr_data_masking` in your R console for the R documentation on
 data masking and examples.
 
-Lost of **super documentation** in the rlang website (some of which gets
-quite advanced!). Especially these two pages:
+Lost of **super documentation** in the rlang website - especially these
+two pages:
 
 -   <https://rlang.r-lib.org/reference/topic-data-mask.html>
 
@@ -409,4 +409,4 @@ Overview of Standard and Non-standard Evaluation (R focused)
 
 -   <https://www.brodieg.com/2020/05/05/on-nse/>
 
-=========================================
+------------------------------------------------------------------------
