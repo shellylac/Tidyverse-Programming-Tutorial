@@ -16,15 +16,15 @@ library(gapminder)
 
 > #### SOLUTION A - Pass the dots `(…)`
 >
-> NOTE - pass the dots `(…)` is also very useful for single data
-> variable functions
+> Can only pass the dots once in a function! So only use when is one
+> pipeline input.
 
 ```{r pass_the_dots}
 #The dots are the last input parameter in the function call
 grouped_mean_dots <- function(data, summary_column, ...) {
   data %>%
     group_by(...) %>%
-    summarise(mean({{ summary_column }}, na.rm = T))
+    summarise("mean_{{summary_column}}" := mean({{ summary_column }}, na.rm = T))
 }
 
 grouped_mean_dots(gapminder, pop, continent, year)
@@ -37,13 +37,28 @@ mean(gapminder$pop)
 ```
 
 -   Note that using `(…)` perpetuates NSE/Data-masking to your bespoke
-    function. The coded blueprint is inherited.
+    function.
 
--   Can only pass the dots once in a function!
+-   NOTE - pass the dots `(…)` is also very useful for single data
+    variable functions and for ggplot (can pass the dots to `aes()` or
+    `vars()`
+
+```{r ggplot_pas_the_dots}
+scatter_facet_plot <- function(data_frame, x_axis, y_axis, ...) {
+  ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(vars(...))
+}
+
+gapminder %>% 
+  grouped_mean_dots(lifeExp, continent, year) %>% 
+  scatter_facet_plot(x_axis = year, y_axis = mean_lifeExp, continent)
+
+```
 
 > #### SOLUTION B - use across()
 
-```{r multi_gps}
+```{r multi_gps_across}
 gap_means <- function(data, grouping_variables, summary_columns){
   data %>% 
     group_by(across({{ grouping_variables }})) %>% 
@@ -57,14 +72,16 @@ my_mean <- function(data, ...) {
   data %>% 
     summarise(across(c(...), ~ mean(.x, na.rm = TRUE)))
 }
+
 gapminder %>% my_mean(lifeExp, pop)
 gapminder %>% my_mean(starts_with("p"))
 
 ```
 
-> #### For the above - name the columns with `.names = ""`
->
-> use `.names = ""` when there are multiple variables (:=
+#### For the above - name the columns with `.names = ""`
+
+use `.names = ""` when there are multiple variables (`:=` only works
+with single variables)
 
 ```{r multi_gps_naming}
 # Use the .names = "" option 
@@ -80,19 +97,30 @@ gap_mean_name_multicols(gapminder, c(continent, year), c(lifeExp, pop, gdpPercap
 
 ```
 
-> #### SOLUTION C - for strings use scoped dplyr verbs e.g. `summarise_at()`
+> #### SOLUTION C - for STRING INPUT can use  string vetor helpers, e.g. `all_of()` / `any_of()` or scoped dplyr verbs e.g. `summarise_at()` 
+>
+> Can't use the `.data[[ ]]` trick we used for single string input. The
+> `.data` pronoun can only be subsetted with single column names. It
+> doesn't support single-bracket indexing (i.e. .`data[ ]`):
+
+```{r strings_helper_funs}
+slice_character <- function(data, grouping_variable, columns, row_start, row_end) {
+  data %>% 
+    group_by(across(all_of(grouping_variable))) %>% 
+    select(all_of(columns)) %>% 
+    slice(row_start:row_end)
+}
+slice_character(gapminder, c("continent", "country"), c("pop", "lifeExp"), 1, 3)
+
+```
 
 ```{r scoped_verbs_strings}
-group_names<-c("continent")
-summ_names <- c("lifeExp", "pop")
-
 gap_means_multigps <- function(data, grouping_variables, summary_columns){
   data %>%
-    group_by(across(all_of(grouping_variables))) %>%
+    group_by_at(vars(grouping_variables)) %>%
     summarise_at(vars(summary_columns), mean)
 }
-gap_means_multigps(gapminder, group_names, summ_names)
-
+gap_means_multigps(gapminder, c("continent", "country"), c("pop", "lifeExp"))
 ```
 
 ## Do you even need Tidy Eval?
@@ -110,7 +138,7 @@ life_v_pop <- function(data){
     data %>% mutate(life_v_pop = lifeExp / pop)
   
   } else {
-    stop("dataset must contain `lifeExp` and `pop` columns")
+    stop("dataset must contain columns named `lifeExp` and `pop`")
   }
 }
   
@@ -118,8 +146,30 @@ life_v_pop(gapminder)
 life_v_pop(mtcars)
 ```
 
-#### Not if you can use column-wise mapping functions (and scoped dplyr verbs)
+#### Not if you can use column-wise mapping functions (scoped dplyr verbs)
 
--   `apply` family from base R
+-   Scoped verbs for `mutate_` / `summarise_` / `filter_` / `group_by_`
 
--   `Purrr` package (`map_` functions)
+    -   `_all` --\> map over all columns; `_if` --\> map over columns
+        selected by condition; `_at` --\> map over a custom selection
+
+    -   No data masking = take objects (not blueprints)
+
+```{r map_function_alternatives}
+#Function scales all numeric variables by SD (will work on any dataset)
+gapminder %>% mutate_if(is.numeric, ~. / sd(.))
+mtcars %>%  mutate_if(is.numeric, ~. / sd(.))
+
+#Can use string vectors directly
+gapminder %>% summarise_at(c("pop", "lifeExp"), mean)
+gapminder %>% 
+  group_by_if(is.factor) %>% 
+  summarise_if(is.numeric, mean)
+
+#work on any dataset
+mtcars %>% 
+  group_by_if(is.factor) %>% 
+  summarise_if(is.numeric, mean)
+```
+
+------------------------------------------------------------------------
