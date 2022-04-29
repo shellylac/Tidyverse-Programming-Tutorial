@@ -57,17 +57,19 @@ function (or use it in a loop)?
 ```{r try_function}
 # Place code within function
 
-gap_mean <- function(data, grouping_variable, summary_column){
+group_mean <- function(data, grouping_variable, summary_column){
   data %>% 
   group_by(grouping_variable) %>% 
   summarise(mean = mean(summary_column, na.rm = T))
 }
 
-#Does it work?
-gap_mean(gapminder, year, lifeExp)
+# Does it work?
+group_mean(gapminder, year, lifeExp)
 
-#What about if we place the arguments in quotes?
-gap_mean(gapminder, "year", "lifeExp")
+# Oh no! R does not understand what we mean. 
+# What about if we place the arguments in quotes?
+group_mean(gapminder, "year", "lifeExp")
+# Still no. What now?
 
 #Another example - What if tried to build a generic plotting function for all of the above dataset?
 plot_fun <- function(data, x, y){
