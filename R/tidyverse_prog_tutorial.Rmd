@@ -74,8 +74,8 @@ function:
 
 group_mean <- function(data, grouping_variable, summary_column){
   data %>% 
-  group_by(grouping_variable) %>% 
-  summarise(mean = mean(summary_column, na.rm = T))
+    group_by(grouping_variable) %>% 
+    summarise(mean = mean(summary_column, na.rm = T))
 }
 
 # Does it work?
@@ -147,7 +147,7 @@ type at the prompt or in an R script).
 *Not many programming languages give the programmer the power to
 implement, use, and abuse Non-Standard Evaluation - but R does!*
 
-And not just in Tidyverse - ALSO in base R!
+And not just in tidyverse - ALSO in base R!
 
 ```{r NSE_baseR}
 subset(gapminder, continent=="Asia") # this works because subset delays the 
@@ -341,11 +341,12 @@ variable, you may still want to use it to select a data variable!
 -   Note that `.data` is not a data frame; it's a special construct, a
     pronoun, within the tidyverse that allows you to access the current
     variables either directly, with `.data$x` or indirectly with
-    `.data[[var]]` (in a grouped dataset it represents the subset for the 
-    current group). Don't expect other functions to work with it.
+    `.data[[var]]` (in a grouped dataset it represents the subset for
+    the current group). Don't expect other functions to work with it.
 
-> If you want to assign a name using string inputs (either function arguments or
-> environment variables) then use `:=` + `{ }` (***single curly brackets***)
+> If you want to assign a name using string inputs (either function
+> arguments or environment variables) then use `:=` + `{ }` (***single
+> curly brackets***)
 
 ```{r indirection_with_strings}
 group_mean <- function(data, grouping_variable, summary_column){
@@ -358,8 +359,6 @@ group_mean <- function(data, grouping_variable, summary_column){
 group_mean(gapminder, "year", "lifeExp")
 ```
 
-
-
 ------------------------------------------------------------------------
 
 ## Tidy Selection: Problems and Solutions
@@ -371,15 +370,15 @@ those described:
 1.  Embrace the function input vars using `{{ }}` - when the input is
     not a string input
 
-    ```{r slice_example}
-    slice_fun <- function(data, grouping_variable, columns, rows) {
-      data %>% 
-        group_by({{ grouping_variable }}) %>% 
-        select({{ columns }}) %>% 
-        slice(rows)
-    }
-    slice_fun(gapminder, continent, lifeExp:gdpPercap, 1)
-    ```
+```{r slice_example}
+slice_fun <- function(data, grouping_variable, columns, rows) {
+  data %>%
+    group_by({{ grouping_variable }}) %>%
+    select({{ columns }}) %>%
+    slice(rows)
+}
+slice_fun(gapminder, continent, lifeExp:gdpPercap, 1)
+```
 
 -   Alternatively - if you have string input (or don't want to propagate
     data masking) then use `.data[[ ]]`:
