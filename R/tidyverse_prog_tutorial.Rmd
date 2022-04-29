@@ -71,17 +71,9 @@ group_mean(gapminder, year, lifeExp)
 group_mean(gapminder, "year", "lifeExp")
 # Still no. What now?
 
-#Another example - What if tried to build a generic plotting function for all of the above dataset?
-plot_fun <- function(data, x, y){
-  data %>% 
-  ggplot(aes(x = x, y = y)) +
-  geom_point() 
-}
-
-plot_fun(meanLE_continent, x = continent, y = meanLE)
-plot_fun(meanLE_continent, x = "continent", y = "meanLE")
-
 ```
+
+
 
 
 
