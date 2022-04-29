@@ -99,16 +99,18 @@ implement, use, and abuse Non-Standard Evaluation - but R does!*
 And not just in Tidyverse - ALSO in base R!
 
 ```{r NSE_baseR}
-subset(mtcars, hp > 250) # this works because 
-                         # subset delays the evalution of hp > 250 before it is run 
-                         # changes its meaning/environment so it relates to mtcars 
-mtcars[hp > 250, ] # Does this work?
-                   # NO! hp is not defined in our environment
+subset(gapminder, continent=="Asia") # this works because subset delays the 
+                                     # evaluation of continent=="Asia" until it 
+                                     # is run when it changes its 
+                                     # meaning/environment so it relates to gapminder
+gapminder[continent=="Asia", ] # Does this work?
+                               # NO! continent is not defined in our environment
 
 #Other base R NSE functions include:
 # with(); transform(); lm()
 # and the old school (for those of us who learnt R way before the tidyverse!):
 # attach()
+
 ```
 
 Much more to learn about NSE!! See list of references at end.
