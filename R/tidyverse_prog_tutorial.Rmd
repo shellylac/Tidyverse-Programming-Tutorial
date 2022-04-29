@@ -52,7 +52,7 @@ might want to calculate it by countries AND years. We shouldn't repeat
 the above code that many times! We need to write re-usable code.
 
 SO let's see what happens when we try to turn the above code into a
-function (or use it in a loop)?
+function:
 
 ```{r try_function}
 # Place code within function
@@ -83,18 +83,9 @@ plot_fun(meanLE_continent, x = "continent", y = "meanLE")
 
 ```
 
-ALSO - a problem if you want to use dplyr functions in loops
 
-```{r try_loop, message=FALSE}
-columns <- names(gapminder)[4:6]
-out <- rep(list(NULL), 3)
 
-for(col in seq_along(columns)){
-  out[[col]] <- gapminder %>% 
-    summarise(mean = mean(columns[[col]], na.rm = T))
-}
 
-out[[1]]
 ```
 
 These approaches all fail because the function syntax confuses
@@ -289,17 +280,6 @@ gap_means <- function(data, grouping_variable, summary_column){
 
 #It works!
 gap_means(gapminder, "year", "lifeExp")
-```
-
-```{r for_loop_solved}
-# 
-columns <- names(gapminder)[4:6]
-out <- rep(list(NULL), 3)
-for(col in columns){
-  out[[col]] <- gapminder %>% 
-    summarise(across(col, ~ mean(.data[[col]]))) 
-}
-unlist(out)
 ```
 
 -   Note that `.data` is not a data frame; it's a special construct, a

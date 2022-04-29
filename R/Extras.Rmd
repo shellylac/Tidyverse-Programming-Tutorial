@@ -173,3 +173,48 @@ mtcars %>%
 ```
 
 ------------------------------------------------------------------------
+
+
+###  Do we ever need for loops?
+
+We might naively try to summarise two columns in a for loop:
+
+```{r for_loop}
+columns <- names(gapminder)[4:6]
+out <- rep(list(NULL), 3)
+for(col in seq_along(columns)){
+  out[[col]] <- gapminder %>%
+    summarise(mean = mean(columns[[col]], na.rm = T))
+}
+unlist(out)
+```
+
+It doesn't work because `columns[[col]]`, a string representing the name of a
+column in gapminder, is not recognised as a data variable within the context of
+the `mean` function. Now we can try again using the `.data` pronoun.
+
+```{r for_loop_solved}
+columns <- names(gapminder)[4:6]
+out <- rep(list(NULL), 3)
+for(col in columns){
+  out[[col]] <- gapminder %>%
+    summarise(mean = mean(.data[[col]]))
+}
+unlist(out)
+```
+
+It worked but it's ugly and we have an awkward output format. We can improve
+this by using the tidy selection function `across` to drop the for loop:
+```{r for_loop_replaced}
+columns <- names(gapminder)[4:6]
+gapminder %>%
+  summarise(across(all_of(columns), mean))
+# or, if we have parameters, use a dot to represent the current variable
+gapminder %>%
+    summarise(across(all_of(columns), ~mean(., na.rm = T)))
+
+
+```
+  > This actually means that for loops are rarely needed!
+  
+
