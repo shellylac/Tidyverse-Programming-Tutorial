@@ -217,4 +217,36 @@ gapminder %>%
 ```
   > This actually means that for loops are rarely needed!
   
+## Using tidy evaluation in other {tidyverse} package functions: ggplot
 
+Finally, we can apply this same logic to other {tidyverse} package
+functions.
+
+-   either embrace `{{ }}` the data variable names
+-   or subset the data using `.data[[ ]]` and input strings to the
+    function call
+
+```{r}
+scatter_plot <- function(data_frame, x_axis, y_axis ) {
+  ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
+    geom_point(alpha = 0.5)
+}
+
+gapminder %>%
+  gap_mean_name(year, lifeExp) %>%
+  scatter_plot(year, mean_lifeExp)
+
+gapminder %>%
+  gap_mean_name(continent, gdpPercap) %>%
+  scatter_plot(continent, mean_gdpPercap)
+
+
+scatter_plot <- function(data_frame, x_axis, y_axis ) {
+  ggplot(data_frame, aes(x = .data[[x_axis]], y = .data[[y_axis]])) +
+    geom_point(alpha = 0.5)
+}
+
+gapminder %>%
+  gap_mean_name(continent, gdpPercap) %>%
+  scatter_plot("continent", "mean_gdpPercap")
+```
