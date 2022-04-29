@@ -15,41 +15,41 @@ library(gapminder)
 ## ♥ Tidyverse = super easy to work with! ♥
 
 Let's suppose we want to calculate the mean life expectancy per
-continent per year for the Gapminder dataset:
+continent or per year for the
+[Gapminder](https://www.gapminder.org/data/documentation/ "Description of data from gapminder.org"){.uri}
+dataset:
 
 ```{r contrived_example}
-# Quickly calculate grouepd means
-meanLE_year <- gapminder %>% 
-  group_by(year) %>% 
-  summarise(meanLE = mean(lifeExp, na.rm = T))
+# Check what the dataset looks like
+head(gapminder)
 
-meanLE_continent <- gapminder %>% 
+# Use tidyverse to calculate grouped means
+gapminder %>%
+  group_by(year) %>%
+  summarise(meanLE = mean(lifeExp, na.rm = T))
+gapminder %>% 
   group_by(continent) %>% 
   summarise(meanLE = mean(lifeExp, na.rm = T))
-
-# Quickly plot the output
-ggplot(meanLE_year, aes(x = year, y = meanLE)) + geom_point() + geom_smooth(method = "lm")
-
-ggplot(meanLE_continent, aes(x = continent, y = meanLE)) + geom_point() 
 ```
 
 Simple! Once we specify the dataset we are working with we can directly
-type the names of the columns and variables in the dataset we wish
-without have to enclose them in quotation marks or having to define them
+type the names of the columns and variables in the dataset, without
+having to enclose them in quotation marks or having to define them
 relative to the dataset itself.
 
 ## But there's a problem! Trouble in paradise?
 
-In the example above we calculated the same metric for three different
-grouping variables by repeating the code and changing one element. This
+In the example above we calculated the same metric for two different
+grouping variables by repeating the code and changing one element. In
+real examples of course, the code is likely to be much longer. This
 isn't good coding practice. When we find ourselves repeating code we
-should look at using some kind of iteration tool or writing a bespoke
+should look at using some kind of iteration method or writing a bespoke
 function.
 
-Also, might want to get (and plot) the means of population size and GDP
-per capita as well as life expectancy across continents and years. Or we
-might want to get means by countries and years. We shouldn't repeat the
-above code that many times! We need to write re-usable code.
+Also, we might want to get the mean of population size and GDP per
+capita as well as life expectancy across continents and years. Or we
+might want to calculate it by countries AND years. We shouldn't repeat
+the above code that many times! We need to write re-usable code.
 
 SO let's see what happens when we try to turn the above code into a
 function (or use it in a loop)?
