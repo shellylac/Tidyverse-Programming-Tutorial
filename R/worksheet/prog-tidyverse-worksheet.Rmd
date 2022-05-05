@@ -91,7 +91,7 @@ The `nest_and_count` function shown below does not work. Your task is to identif
     #'
     #' @return A data frame where the data, other than the group specified in 
     #' `nest_by`, is nested. The number of rows for each data frame in the list
-    #' column is given in a column called `n`.
+    #' column is given in a new column with a name specified by `col_name`.
     #' @export
     #'
     #' @examples
@@ -149,7 +149,7 @@ test_4()
 
 ### Exercise 5
 
-Write a function called `select_and_arrange` whose documentation we provide below. This function should use embracing with `{{` and pass the dots `...` syntax to accomplish it's job.
+Write a function called `select_and_arrange` whose documentation we provide below. This function should use embracing with `{{` and pass the dots `...` syntax to accomplish its job.
 
     #' Select and arrange
     #'
@@ -169,9 +169,8 @@ Write a function called `select_and_arrange` whose documentation we provide belo
 ```{r}
 # your code here
 select_and_arrange <- function (data, sort_by, ...){
-    sort_by <- enquo(sort_by)
     data %>% 
-        arrange(!!sort_by) %>% 
+        arrange({{ sort_by }}) %>% 
         select(...)
 }
 select_and_arrange(penguins, body_mass_g, species:island, sex)
@@ -197,6 +196,6 @@ have_fun <- function(data) { # add as many arguments as you want!
 test_6()
 ```
 
-Congratulations! You are done the worksheet!!! Pat yourself on the back!
+Congratulations! You are done with the worksheet!!! Pat yourself on the back!
 
 ![](https://media.giphy.com/media/13n4Hd98ewKJsQ/giphy.gif)
