@@ -118,7 +118,7 @@ group_index(penguins, species, sp_idx)
 test_3()
 ```
 
-### Exercise 4
+### Exercise 4 (advanced - see Extras.Rmd)
 
 Take the function you fixed in exercise 1 and **rename it** `get_rectangle2`. Now make it work better with select syntax by added pass the dots, `...`, in place of `column_range`. When you do this, play with inputs to this function, what can you do with `...` as opposed to using a named argument? *Hint: try selecting columns that are not beside each other.* What can't you do? *Hint: think about function argument defaults.*
 
