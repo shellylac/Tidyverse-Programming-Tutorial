@@ -42,16 +42,22 @@ test_2 <- function(){
 }
 
 test_3 <- function(){
-    fun_body <- paste(deparse(body(nest_and_count)), collapse = "")
-    answer <- nest_and_count(penguins, species)
-    test_that("nest_and_count should return a data frame", {
+    fun_body <- paste(deparse(body(group_index)), collapse = "")
+    answer <- group_index(penguins, species, sp_idx)
+    test_that("group_index should return a data frame", {
         expect_true(is.data.frame(answer))
     })
-    test_that('nest_and_count is not working correctly', {
-        expect_equal(nrow(answer), 3)
-        expect_equal(ncol(answer), 3)
-        expect_equal(paste(tolower(sort(colnames(answer))), collapse = ""), 'datanspecies')
-        expect_equal(sum(as.numeric(answer$n)), 344)
+
+    test_that('group_index is working correctly', {
+        expect_equal(nrow(answer), nrow(penguins))
+        expect_equal(ncol(answer), ncol(penguins)+1)
+        expect_equal(paste(colnames(answer), collapse = ""),
+                     paste(c(colnames(penguins), "sp_idx"), collapse = ""))
+        expect_equal(sum(as.numeric(answer$sp_idx)),
+                     sum(penguins %>% group_by(species) %>%
+                       count() %>% pull(n) %>%
+                       sapply(function(x) sum(1:x)))
+                     )
     })
     test_that("`:=` was supposed to be used for assignment", {
         expect_true(str_detect(fun_body, ":="))

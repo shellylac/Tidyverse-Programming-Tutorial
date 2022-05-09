@@ -81,47 +81,37 @@ test_2()
 
 ### Exercise 3
 
-The `nest_and_count` function shown below does not work. Your task is to identify why and fix it so that the function works as described:
+The `group_index` function shown below does not work. Your task is to identify why and fix it so that the function works as described:
 
-    #' Nest data and count observations in each group
+    #' Group data by a given column and add a row index in a new column
     #'
     #' @param data A data frame
-    #' @param nest_by A column to group by. Column name should be unquoted.
-    #' @param col_name A new column name for the count column. Column name should be unquoted.
+    #' @param group_col A column to group by. Column name should be unquoted.
+    #' @param out_col A new column name for the index column. Column name should be unquoted.
     #'
-    #' @return A data frame where the data, other than the group specified in 
-    #' `nest_by`, is nested. The number of rows for each data frame in the list
-    #' column is given in a new column with a name specified by `col_name`.
+    #' @return A data frame with one additional column containing a sequential index for each row
+    #' within its group as specified in `group_col`. The index variable is given the name specified 
+    #' by `out_col`.
     #' @export
     #'
     #' @examples
     #' library(palmerpenguins)
-    #' nest_and_count(penguins, species)
-    nest_and_count <- function(data, nest_by, col_name) {
+    #' group_index(penguins, species, sp_idx)
+    group_index <- function(data, group_col, out_col) {
         data %>% 
-            group_by({{ nest_by }}) %>% 
-            nest() %>% 
-            mutate({{ col_name }} = map_dbl(data, nrow))
+            group_by({{ group_col }}) %>% 
+            mutate({{ out_col }} = row_number())
     }
 
 ```{r}
 # your code here
-nest_and_count <- function(data, nest_by, col_name) {
-        data %>% 
-            group_by( {{ nest_by }} ) %>% 
-            nest() %>% 
-            mutate({{ col_name }} := map_dbl(data, nrow))
-}
-
-nest_and_count2 <- function(data, nest_by, col_name) {
-    nest_by <- enquo(nest_by)    
+group_index <- function(data, group_col, out_col) {
     data %>% 
-            group_by(!!nest_by) %>% 
-            nest() %>% 
-            mutate({{ col_name }} := map_dbl(data, nrow))
+        group_by({{ group_col }}) %>% 
+        mutate({{ out_col }} := row_number())
 }
 
-nest_and_count2(penguins, species, n)
+group_index(penguins, species, sp_idx)
 ```
 
 ```{r}
