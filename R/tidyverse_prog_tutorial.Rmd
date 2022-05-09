@@ -27,6 +27,8 @@ library(gapminder)
     -   Unexpected masking
     -   Naming variables
     -   String inputs
+-   Tidy selection: problems and solutions
+    -   Functions with arbitrary selection of variables
 
 # Motivation
 
@@ -364,39 +366,47 @@ group_mean(gapminder, "year", "lifeExp")
 
 ------------------------------------------------------------------------
 
-## Tidy Selection: Problems and Solutions
+## Tidy Selection: Allow arbitrary selection of variables
 
-As with data masking, tidy selection makes a common task easier at the
-cost of making a less common task harder. The solutions are similar to
-those described:
+You might want to allow the function user to select sets of (not
+necessarily sequential) columns, as they can when using tidyverse
+select(). Once again the solution is usually easy with curly-curly:
 
-1.  Embrace the function input vars using `{{ }}` - when the input is
-    not a string input
+> #### Solution 1:
+>
+> Unquoted arguments: Embrace the function input vars using `{{ }}` -
+> when the input is not a string input
 
 ```{r slice_example}
 slice_fun <- function(data, grouping_variable, columns, rows) {
   data %>%
     group_by({{ grouping_variable }}) %>%
-    select({{ columns }}) %>%
+    select({{ grouping_variable }}, {{ columns }}) %>%
     slice(rows)
 }
 slice_fun(gapminder, continent, lifeExp:gdpPercap, 1)
+slice_fun(gapminder, continent, where(is.double), 1)
+
 ```
 
--   Alternatively - if you have string input (or don't want to propagate
-    data masking) then use `.data[[ ]]`:
+-   Alternatively - if you have string inputs (or don't want to propagate
+    data masking), you can accept a set of column names as a vector:
+
+> #### Solution 2:
+>
+> Quoted arguments: Use all_of() - when the input is a list of strings
+> giving the variable names
 
 ```{r}
-slice_character_subset <- function(data, column, row_start, row_end) {
+slice_character_subset <- function(data, columns, row_start, row_end) {
   data %>%
-    select(.data[[column]]) %>%
+    select(all_of(columns)) %>%
     slice(row_start:row_end)
 }
-slice_character_subset(gapminder, "pop", 1, 10)
+slice_character_subset(gapminder, c("country", "year", "pop"), 1, 10)
+
 ```
 
-
-## What about with multiple data variables? - see `Extras.Rmd`
 ## What about ggplot? - it works the same way! See `Extras.Rmd`
 
 ## Do you even need Tidy Eval? - see `Extras.Rmd`
