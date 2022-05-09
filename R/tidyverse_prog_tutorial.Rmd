@@ -17,13 +17,16 @@ library(gapminder)
 -   Motivation
     -   Why we love the tidyverse
     -   Where we start to get into difficulties
--   Basics of programming, tidy-style
+-   Background to programming, tidy-style
     -   Different types of variables
     -   Non-standard evaluation
+    -   Tidy evaluation
 -   Implementing tidy functions
     -   Curly-curly
-    -   .data pronoun
-    -   Walrus operator
+-   Data masking: problems and solutions
+    -   Unexpected masking
+    -   Naming variables
+    -   String inputs
 
 # Motivation
 
@@ -93,7 +96,7 @@ group_mean(gapminder, "year", "lifeExp")
 
 ------------------------------------------------------------------------
 
-# Basics of programming, tidy-style
+# Background to programming, tidy-style
 
 To write functions that use tidyverse functions, we need to
 
@@ -294,7 +297,7 @@ data1 %>% add_something(x) %>% pull(y)
 data2 %>% add_something(x) %>% pull(y)
 ```
 
-### 2. Naming of variables in functions
+### **2. Naming of variables in functions**
 
 You may want to construct the name of a variable from some data or
 environmental variables.
@@ -326,7 +329,7 @@ group_mean_name <- function(data, grouping_variable, summary_column){
 group_mean_name(gapminder, country, lifeExp)
 ```
 
-### 4. Indirection with string inputs
+### **3. Indirection with string inputs**
 
 Sometimes you will need to interpret strings as data variable names. For
 example, if the name of the required data variable is read in from a
@@ -392,9 +395,9 @@ slice_character_subset <- function(data, column, row_start, row_end) {
 slice_character_subset(gapminder, "pop", 1, 10)
 ```
 
-## What about ggplot? - see `Extras.Rmd`
 
 ## What about with multiple data variables? - see `Extras.Rmd`
+## What about ggplot? - it works the same way! See `Extras.Rmd`
 
 ## Do you even need Tidy Eval? - see `Extras.Rmd`
 
