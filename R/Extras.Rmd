@@ -15,9 +15,6 @@ library(gapminder)
 ## What about with multiple data variables?
 
 > #### SOLUTION A - Pass the dots `(…)`
->
-> Can only pass the dots once in a function! So only use when is one
-> pipeline input.
 
 ```{r pass_the_dots}
 #The dots are the last input parameter in the function call
