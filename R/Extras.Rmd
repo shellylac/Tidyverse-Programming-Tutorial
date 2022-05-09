@@ -24,14 +24,14 @@ library(gapminder)
 grouped_mean_dots <- function(data, summary_column, ...) {
   data %>%
     group_by(...) %>%
-    summarise("mean_{{summary_column}}" := mean({{ summary_column }}, na.rm = T))
+    summarise("mean_{{summary_column}}" := mean({{ summary_column }}, na.rm = T), .groups="keep")
 }
 
 grouped_mean_dots(gapminder, pop, continent, year)
 
 # Careful with string input vs data variables
 # What is this doing?
-grouped_mean_dots(gapminder, pop, "year")
+grouped_mean_dots(gapminder, pop, "continent", "year")
 #c.f.
 mean(gapminder$pop)
 ```
