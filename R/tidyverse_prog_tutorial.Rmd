@@ -268,12 +268,12 @@ a few hints and tips.
 # An object in your workspace (which you want to use) has the same name as a 
 # dataset column. 
 add_something <- function(data, col) {
-  n <- sample.int(200, size=1)
-  data %>% mutate(y = {{ col }} + n)
+  n <- sample.int(200, size = 1)
+  data %>% mutate(y = {{ col }} * z + n)
 }
 
-data1 <- data.frame(x = 100)
-data2 <- data.frame(x = 100, n = "argh")
+data1 <- data.frame(x = 100, z = 10)
+data2 <- data.frame(x = 100, z = 10, n = "argh")
 
 data1 %>% add_something(x) %>% pull(y)
 data2 %>% add_something(x) %>% pull(y)
@@ -292,7 +292,8 @@ environment variable `n`!
 #Specify .data and .env pronouns
 add_something <- function(data, col) {
   n <- sample.int(200, size=1)
-  data %>% mutate(y = {{ col }} + .env$n)
+  z <- 20
+  data %>% mutate(y = {{ col }} * .data$z + .env$n)
 }
 
 data1 %>% add_something(x) %>% pull(y)
