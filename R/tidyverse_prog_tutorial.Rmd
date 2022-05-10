@@ -22,7 +22,7 @@ library(gapminder)
     -   Non-standard evaluation
     -   Tidy evaluation
 -   Implementing tidy functions
-    -   Curly-curly
+    -   The curly-curly operator `{{ }}`
 -   Data masking: problems and solutions
     -   Unexpected masking
     -   Naming variables
@@ -52,16 +52,17 @@ gapminder %>%
   summarise(meanLE = mean(lifeExp, na.rm = T))
 ```
 
-Simple! Once we specify the dataset we are working with we can directly
-type the names of the columns and variables in the dataset, without
-having to enclose them in quotation marks or having to define them
-relative to the dataset itself.
+Simple!
+
+Once we specify the dataset we are working with we can directly type the
+names of the columns and variables in the dataset, without having to
+enclose them in quotation marks or having to define them relative to the
+dataset itself.
 
 ## But there's a problem! Trouble in paradise?
 
 In the example above we calculated the same metric for two different
-grouping variables by repeating the code and changing one element. In
-real examples of course, the code is likely to be much longer. This
+grouping variables by repeating the code and changing one element. This
 isn't good coding practice. When we find ourselves repeating code we
 should look at using some kind of iteration method or writing a bespoke
 function.
@@ -89,12 +90,11 @@ group_mean(gapminder, year, lifeExp)
 # Oh no! R does not understand what we mean. 
 # What about if we place the arguments in quotes?
 group_mean(gapminder, "year", "lifeExp")
-# Still no. What now?
+# Still no. 
 
 ```
 
-**Tidyverse functions deal with data variables by using non-standard
-(tidy) evaluation**
+What now?
 
 ------------------------------------------------------------------------
 
@@ -163,10 +163,11 @@ gapminder[continent=="Asia", ] # Does this work?
                                # NO! continent is not defined in our environment
 
 #Other base R NSE functions include:
-# with(); transform(); lm()
+# with()
+# transform()
+# lm()
 # and the old school (for those of us who learnt R way before the tidyverse!):
 # attach()
-
 ```
 
 Much more to learn about NSE!! See list of references at end.
@@ -234,10 +235,8 @@ wrong piece of blueprint.
 > The curly-curly `{{ }}` operator allows you to *tunnel* a data
 > variable through a function. It acts as a wrapper for lower level
 > operators (`enquo()` and `!!`) that function to **quote-and-unquote**
-> the expression pattern:
->
-> `enquo()` - delays the interpretation of code and captures its
-> blueprint and `!!` - which modifies those blueprints.
+> the expression pattern: `enquo()` - delays the interpretation of code
+> and captures its blueprint and `!!` modifies the blueprints.
 
 ```{r tidy_eval_soln}
 group_mean <- function(data, grouping_variable, summary_column){
@@ -256,8 +255,9 @@ group_mean(gapminder, continent, pop)
 evaluation! It was as simple as adding a few curly braces.
 
 Of course, when you try to use this in real life you will encounter
-plenty of difficulties along the way! Here are some common problems and
-a few hints and tips.
+plenty of difficulties along the way!
+
+Here are some common problems and a few hints and tips.
 
 ## Data Masking Problems and Solutions
 
@@ -334,10 +334,14 @@ group_mean_name(gapminder, country, lifeExp)
 
 ### **3. Indirection with string inputs**
 
-Sometimes you will need to interpret strings as data variable names. For
-example, if the name of the required data variable is read in from a
-separate file or from user input, and held within an environment
-variable, you may still want to use it to select a data variable!
+Sometimes you will need to interpret strings as data variable names.
+This may be necessary if the name of the required data variable is read
+in from a separate file or from user input, and held within an
+environment variable.
+
+Enabling your function to accept string inputs also avoids perpetuating
+data masking into your function (which may be what you want if the
+function will be used by programmers not familiar with data masking!).
 
 > #### SOLUTION - use data sub-setting explicitly with: `.data[[ var ]]`
 >
@@ -371,12 +375,13 @@ group_mean(gapminder, "year", "lifeExp")
 
 You might want to allow the function user to select sets of (not
 necessarily sequential) columns, as they can when using tidyverse
-select(). Once again the solution is usually easy with curly-curly:
+`select()`. Once again the solution is usually obtained with curly-curly
+`{{ }}`:
 
 > #### Solution 1:
 >
-> Unquoted arguments: Embrace the function input vars using `{{ }}` -
-> when the input is not a string input
+> [Unquoted arguments]{.underline}: Embrace the function input vars
+> using `{{ }}` when the input is not a string input:
 
 ```{r slice_example}
 slice_fun <- function(data, grouping_variable, columns, rows) {
@@ -390,13 +395,11 @@ slice_fun(gapminder, continent, where(is.double), 1)
 
 ```
 
--   Alternatively - if you have string inputs (or don't want to propagate
-    data masking), you can accept a set of column names as a vector:
-
 > #### Solution 2:
 >
-> Quoted arguments: Use all_of() - when the input is a list of strings
-> giving the variable names
+> [Quoted arguments]{.underline}: Use `all_of()` when the input is a
+> list of strings giving the variable names (or don't want to propagate
+> data masking):
 
 ```{r}
 slice_character_subset <- function(data, columns, row_start, row_end) {
