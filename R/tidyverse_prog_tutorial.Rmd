@@ -12,96 +12,137 @@ library(tidyverse)
 library(gapminder)
 ```
 
+# Outline
+
+-   Motivation
+    -   Why we love the tidyverse
+    -   Where we start to get into difficulties
+-   Background to programming, tidy-style
+    -   Different types of variables
+    -   Non-standard evaluation
+    -   Tidy evaluation
+-   Implementing tidy functions
+    -   Curly-curly
+-   Data masking: problems and solutions
+    -   Unexpected masking
+    -   Naming variables
+    -   String inputs
+-   Tidy selection: problems and solutions
+    -   Functions with arbitrary selection of variables
+
+# Motivation
+
 ## ♥ Tidyverse = super easy to work with! ♥
 
 Let's suppose we want to calculate the mean life expectancy per
-continent per year for the Gapminder dataset:
+continent or per year for the
+[Gapminder](https://www.gapminder.org/data/documentation/ "Description of data from gapminder.org"){.uri}
+dataset:
 
 ```{r contrived_example}
-# Quickly calculate grouepd means
-meanLE_year <- gapminder %>% 
-  group_by(year) %>% 
-  summarise(meanLE = mean(lifeExp, na.rm = T))
+# Check what the dataset looks like
+head(gapminder)
 
-meanLE_continent <- gapminder %>% 
+# Use tidyverse to calculate grouped means
+gapminder %>%
+  group_by(year) %>%
+  summarise(meanLE = mean(lifeExp, na.rm = T))
+gapminder %>% 
   group_by(continent) %>% 
   summarise(meanLE = mean(lifeExp, na.rm = T))
-
-# Quickly plot the output
-ggplot(meanLE_year, aes(x = year, y = meanLE)) + geom_point() + geom_smooth(method = "lm")
-
-ggplot(meanLE_continent, aes(x = continent, y = meanLE)) + geom_point() 
 ```
 
 Simple! Once we specify the dataset we are working with we can directly
-type the names of the columns and variables in the dataset we wish
-without have to enclose them in quotation marks or having to define them
+type the names of the columns and variables in the dataset, without
+having to enclose them in quotation marks or having to define them
 relative to the dataset itself.
 
 ## But there's a problem! Trouble in paradise?
 
-In the example above we calculated the same metric for three different
-grouping variables by repeating the code and changing one element. This
+In the example above we calculated the same metric for two different
+grouping variables by repeating the code and changing one element. In
+real examples of course, the code is likely to be much longer. This
 isn't good coding practice. When we find ourselves repeating code we
-should look at using some kind of iteration tool or writing a bespoke
+should look at using some kind of iteration method or writing a bespoke
 function.
 
-Also, might want to get (and plot) the means of population size and GDP
-per capita as well as life expectancy across continents and years. Or we
-might want to get means by countries and years. We shouldn't repeat the
-above code that many times! We need to write re-usable code.
+Also, we might want to get the mean of population size and GDP per
+capita as well as life expectancy across continents and years. Or we
+might want to calculate it by countries AND years. We shouldn't repeat
+the above code that many times! We need to write re-usable code.
 
 SO let's see what happens when we try to turn the above code into a
-function (or use it in a loop)?
+function:
 
 ```{r try_function}
 # Place code within function
 
-gap_mean <- function(data, grouping_variable, summary_column){
+group_mean <- function(data, grouping_variable, summary_column){
   data %>% 
-  group_by(grouping_variable) %>% 
-  summarise(mean = mean(summary_column, na.rm = T))
+    group_by(grouping_variable) %>% 
+    summarise(mean = mean(summary_column, na.rm = T))
 }
 
-#Does it work?
-gap_mean(gapminder, year, lifeExp)
+# Does it work?
+group_mean(gapminder, year, lifeExp)
 
-#What about if we place the arguments in quotes?
-gap_mean(gapminder, "year", "lifeExp")
-
-#Another example - What if tried to build a generic plotting function for all of the above dataset?
-plot_fun <- function(data, x, y){
-  data %>% 
-  ggplot(aes(x = x, y = y)) +
-  geom_point() 
-}
-
-plot_fun(meanLE_continent, x = continent, y = meanLE)
-plot_fun(meanLE_continent, x = "continent", y = "meanLE")
+# Oh no! R does not understand what we mean. 
+# What about if we place the arguments in quotes?
+group_mean(gapminder, "year", "lifeExp")
+# Still no. What now?
 
 ```
 
-ALSO - a problem if you want to use dplyr functions in loops
-
-```{r try_loop, message=FALSE}
-columns <- names(gapminder)[4:6]
-out <- rep(list(NULL), 3)
-
-for(col in seq_along(columns)){
-  out[[col]] <- gapminder %>% 
-    summarise(mean = mean(columns[[col]], na.rm = T))
-}
-
-out[[1]]
-```
-
-These approaches all fail because the function syntax confuses
-environment variables with data variables - which happens because
-R/Tidyverse uses Non-standard Evaluation
+**Tidyverse functions deal with data variables by using non-standard
+(tidy) evaluation**
 
 ------------------------------------------------------------------------
 
-## NSE = Non-standard evaluation (VERY VERY briefly!)
+# Background to programming, tidy-style
+
+To write functions that use tidyverse functions, we need to
+
+-   Understand **data masking**
+-   Implement **non-standard evaluation**
+
+### Data masking
+
+The key idea behind data masking is that it blurs the line between the
+two different meanings of the word *variable*:
+
+-   **environment variables** are programming variables that live in an
+    environment. They are often created with `<-` but they may also be
+    function arguments, function names, or even built-in names such as
+    `TRUE`.
+
+-   **data variables** are the variables that are part of a particular
+    data frame (the identifiers of the columns).
+
+Data Masking allows you to use data variables as if they were
+environment variables, i.e. it lets you write `my_variable` instead of
+`dataset$my_variable`. This is used in tidyverse functions such as
+
+-   `arrange()`, `count()`, `filter()`, `group_by()`, `mutate()`, and
+    `summarise()`
+
+Data masking makes data manipulation easier because it requires less
+typing (cf with base R):
+
+```{r data_masking, results = FALSE}
+#Compare Base R
+gapminder[gapminder$continent == "Europe" & gapminder$pop < 1000000, ]
+
+#With Tidyverse
+gapminder %>% filter(continent == "Europe", pop < 1000000)
+```
+
+This is (one of the reasons) why the tidyverse is so popular and easy to
+use!
+
+We want our functions to be like that, too! So how does the tidyverse do
+this? The answer lies in non-standard evaluation.
+
+### NSE = Non-standard evaluation (VERY VERY briefly!)
 
 What is NSE? Very roughly, it is to "*programmatically modify an
 expression or its meaning after it is issued but before it is
@@ -111,115 +152,76 @@ type at the prompt or in an R script).
 *Not many programming languages give the programmer the power to
 implement, use, and abuse Non-Standard Evaluation - but R does!*
 
-And not just in Tidyverse - ALSO in base R!
+And not just in tidyverse - ALSO in base R!
 
 ```{r NSE_baseR}
-subset(mtcars, hp > 250) # this works because 
-                         # subset delays the evalution of hp > 250 before it is run 
-                         # changes its meaning/environment so it relates to mtcars 
-mtcars[hp > 250, ] # Does this work?
-                   # NO! hp is not defined in our environment
+subset(gapminder, continent=="Asia") # this works because subset delays the 
+                                     # evaluation of continent=="Asia" until it 
+                                     # is run when it changes its 
+                                     # meaning/environment so it relates to gapminder
+gapminder[continent=="Asia", ] # Does this work?
+                               # NO! continent is not defined in our environment
 
 #Other base R NSE functions include:
 # with(); transform(); lm()
 # and the old school (for those of us who learnt R way before the tidyverse!):
 # attach()
+
 ```
 
 Much more to learn about NSE!! See list of references at end.
 
-#### ≈ Tidy Evaluation (NSE in the Tidyverse; implemented in the rlang package) has two forms:
+### Tidy Evaluation
 
-**Data Masking** - allows you to use data variables as if they were
-variables in the environment/ objects in the workspace --\> i.e. lets
-you write `my_variable` not `dataset$myvariable`)
+Tidy evaluation is a version of NSE used in the tidyverse (implemented
+in the rlang package), designed for working with data. It provides:
 
--   `arrange()`, `count()`, `filter()`, `group_by()`, `mutate()`, and
-    `summarise()`
+**Data Masking** to access your data variables directly in the context
+of the data (perhaps modified or grouped earlier in the pipeline) that
+you are working with
 
-Data masking makes data manipulation faster because it requires less
-typing (cf with base R):
+**Tidy Selection** to easily choose variables based on their position,
+name, or type, e.g. `starts_with("x")` or `is.numeric`, and write code
+that may use one or many separate data variables together. This is used
+in tidyverse selection functions such as
 
-```{r data_masking, results = FALSE}
-#Comapre Base R
-gapminder[gapminder$continent == "Europe" & gapminder$pop < 1000000, ]
-
-#With Tidyverse
-gapminder %>% filter(continent == "Europe", pop < 1000000)
-```
-
-**Tidy Selection** - allows you to easily choose variables based on
-their position, name, or type (e.g. `starts_with("x")` or `is.numeric`).
-
--   `across()`, `relocate()`, `rename()`, `select()`, and `pull()`
+-   `across()`, `relocate()`, `rename_with()`, and `select()`
 
 > Tidyverse functions are built for interactivity! They make interactive
 > data exploration fast and fluid (and fun!)
->
+
 > But they add some new challenges when you attempt to use them
 > indirectly such as in a for loop or a function.
 
 ------------------------------------------------------------------------
 
-## Data Masking Problems and Solutions
+# Implementing tidy functions
 
-### **1. Unexpected masking**
+If you are writing a function that will call any tidyverse functions,
+you are likely to want or need to make your function work in a similar
+way.
 
-The key idea behind data masking is that it blurs the line between the
-two different meanings of the word *variable*:
+## Standard tidyverse-style functions with curly-curly
 
--   **environment variables** are programming variables that live in an
-    environment. They are usually created with `<-`.
+In our group mean example above, we want our parameters
+`grouping_variable` and `summary_column` to be treated as data
+variables. To do this we will implement the function with tidy
+evaluation!
 
--   **data variables** are statistical variables that live in a data
-    frame (come from data files or are created by manipulating variables
-    within the data frame).
+Here is our example from above which didn't work:
 
-```{r unexp_masking}
-# Example of Unexpected masking
-# An object in your workspace (which you want to use) has the same name as a dataset column
-n <- 100
-data1 <- data.frame(x = 1)
-data2 <- data.frame(x = 1, n = 2)
-
-data1 %>% mutate(y = x / n) %>% pull(y)
-data2 %>% mutate(y = x / n) %>% pull(y)
-
-```
-
-> #### SOLUTION - Be explicit in your code
->
-> Use the `.data$` or `.env$` pronouns to explicitly associate variables
-> to data frames or the global environment:
-
-```{r unexp_mask_soln}
-
-#Specify .data and .end pronouns
-data1 %>% mutate(y = .data$x / .env$n) %>% pull(y)
-data2 %>% mutate(y = .data$x / .env$n) %>% pull(y)
-```
-
-### **2. Indirection**
-
-Occurs when data-variables can't get through functions/loops because the
-function expects an environment variable (but you provide a data
-variable in the call):
-
-```{r indrection}
-# Example of indirection = function we tried to run above - DOESN'T WORK
-gap_mean <- function(data, grouping_variable, summary_column){
-  data %>% 
-  group_by(grouping_variable) %>% 
-  summarise(mean = mean(summary_column, na.rm = T))
-}
-
-#It doesn't work
-gap_mean(gapminder, year, lifeExp)
-```
+    group_mean <- function(data, grouping_variable, summary_column) {
+      data %>%
+        group_by(grouping_variable) %>%
+        summarise(mean = mean(summary_column, na.rm = T))
+    }
+    group_mean(gapminder, year, lifeExp)
 
 Inside the function, `grouping_variable` and `summary_column` are
-environment variables. But when you call the function `year` and
-`lifeExp` are data variables.
+environment variables. But when you call `group_by` and `summarise`,
+they expect the arguments to be data variables and look for columns
+named `grouping_variable` and `summary_column` instead of `year` and
+`lifeExp`.
 
 Data-masked code needs to be *delayed* and *transported* to the data
 context. Behind the scenes, dplyr verbs achieve this by capturing the
@@ -228,7 +230,7 @@ mask. The example above fails because `group_by()` is capturing the
 wrong piece of blueprint.
 
 > #### SOLUTION - use the curly-curly operator `{{ }}`
-
+>
 > The curly-curly `{{ }}` operator allows you to *tunnel* a data
 > variable through a function. It acts as a wrapper for lower level
 > operators (`enquo()` and `!!`) that function to **quote-and-unquote**
@@ -237,148 +239,175 @@ wrong piece of blueprint.
 > `enquo()` - delays the interpretation of code and captures its
 > blueprint and `!!` - which modifies those blueprints.
 
-```{r indrection_soln}
-gap_mean <- function(data, grouping_variable, summary_column){
-  data %>% 
-  group_by({{ grouping_variable }}) %>% 
-  summarise(mean({{ summary_column }}, na.rm = T))
+```{r tidy_eval_soln}
+group_mean <- function(data, grouping_variable, summary_column){
+  data %>%
+    group_by({{ grouping_variable }}) %>%
+    summarise(mean({{ summary_column }}, na.rm = T))
 }
 
 #It works!
-gap_mean(gapminder, year, lifeExp)
-gap_mean(gapminder, continent, pop)
+group_mean(gapminder, year, lifeExp)
+group_mean(gapminder, continent, pop)
 
 ```
 
-### 3. Naming of variables in functions
+**Congratulations!** You have just written a function that uses tidy
+evaluation! It was as simple as adding a few curly braces.
+
+Of course, when you try to use this in real life you will encounter
+plenty of difficulties along the way! Here are some common problems and
+a few hints and tips.
+
+## Data Masking Problems and Solutions
+
+### **1. Unexpected masking**
+
+```{r unexp_masking}
+# Example of Unexpected masking
+# An object in your workspace (which you want to use) has the same name as a 
+# dataset column. 
+add_something <- function(data, col) {
+  n <- sample.int(200, size=1)
+  data %>% mutate(y = {{ col }} + n)
+}
+
+data1 <- data.frame(x = 100)
+data2 <- data.frame(x = 100, n = "argh")
+
+data1 %>% add_something(x) %>% pull(y)
+data2 %>% add_something(x) %>% pull(y)
+
+```
+
+Here the data variable `n` in `data2` has unexpectedly masked our
+environment variable `n`!
+
+> #### SOLUTION - Be explicit in your code
+>
+> Use the `.data$` or `.env$` pronouns to explicitly associate variables
+> to data frames or the global environment:
+
+```{r unexp_mask_soln}
+#Specify .data and .env pronouns
+add_something <- function(data, col) {
+  n <- sample.int(200, size=1)
+  data %>% mutate(y = {{ col }} + .env$n)
+}
+
+data1 %>% add_something(x) %>% pull(y)
+data2 %>% add_something(x) %>% pull(y)
+```
+
+### **2. Naming of variables in functions**
+
+You may want to construct the name of a variable from some data or
+environmental variables.
+
+```{r name_assignment}
+group_mean_name <- function(data, grouping_variable, summary_column) {
+  result_name <- paste0("mean_", names(data %>% select( {{ summary_column }} )))
+  data %>%
+    group_by({{ grouping_variable }}) %>%
+    summarise(result_name = mean({{ summary_column }}, na.rm = T))
+}
+group_mean_name(gapminder, country, lifeExp)
+# Doesn't work! The column has been named 'result_name'.
+```
 
 > #### Solution - use the walrus operator `:=`
 >
 > `:=` enables dynamic naming of variables with tidy evaluation (used
 > when there is only variable to name in the function)
 
-```{r, name_assignment}
+```{r name_assignment_soln}
 # Use the Walrus operator and syntax similar to the glue package
-gap_mean_name <- function(data, grouping_variable, summary_column){
-  data %>% 
-  group_by({{ grouping_variable }}) %>% 
-  summarise("mean_{{ summary_column }}" := mean({{ summary_column }}, na.rm = T))
+group_mean_name <- function(data, grouping_variable, summary_column){
+  data %>%
+    group_by({{ grouping_variable }}) %>%
+    summarise("mean_{{ summary_column }}" := mean({{ summary_column }}, na.rm = T))
 }
 
-gap_mean_name(gapminder, country, lifeExp)
+group_mean_name(gapminder, country, lifeExp)
 ```
 
-### 4. Indirection with string inputs?
+### **3. Indirection with string inputs**
 
-> #### SOLUTION A - use data sub-setting explicitly with: `.data[[ var ]]`
+Sometimes you will need to interpret strings as data variable names. For
+example, if the name of the required data variable is read in from a
+separate file or from user input, and held within an environment
+variable, you may still want to use it to select a data variable!
+
+> #### SOLUTION - use data sub-setting explicitly with: `.data[[ var ]]`
 >
 > When you have a character env-variable and you wish to input this into
 > a function, you need to index into the `.data` pronoun with `[[`.
->
-> If you want to assign name then use `:=` + `{ }` (***single curly
-> brackets***)
-
-```{r indirection_with_strings}
-gap_means <- function(data, grouping_variable, summary_column){
-  data %>% 
-  group_by(.data[[grouping_variable]]) %>% 
-  summarise("mean_{summary_column}" := mean(.data[[summary_column]], na.rm = T))
-}
-
-#It works!
-gap_means(gapminder, "year", "lifeExp")
-```
-
-```{r for_loop_solved}
-# 
-columns <- names(gapminder)[4:6]
-out <- rep(list(NULL), 3)
-for(col in columns){
-  out[[col]] <- gapminder %>% 
-    summarise(across(col, ~ mean(.data[[col]]))) 
-}
-unlist(out)
-```
 
 -   Note that `.data` is not a data frame; it's a special construct, a
     pronoun, within the tidyverse that allows you to access the current
     variables either directly, with `.data$x` or indirectly with
-    `.data[[var]]` (it represents the subset for the current group).
-    Don't expect other functions to work with it.
+    `.data[[var]]` (in a grouped dataset it represents the subset for
+    the current group). Don't expect other functions to work with it.
 
--   Note also that using this syntax avoids creating new bespoke
-    functions that ARE ALSO DATA MASKING functions! This can be good
-    when your code will be used by non-R users or in production.
+> If you want to assign a name using string inputs (either function
+> arguments or environment variables) then use `:=` + `{ }` (***single
+> curly brackets***)
+
+```{r indirection_with_strings}
+group_mean <- function(data, grouping_variable, summary_column){
+  data %>%
+    group_by(.data[[grouping_variable]]) %>%
+    summarise("mean_{summary_column}" := mean(.data[[summary_column]], na.rm = T))
+}
+
+#It works!
+group_mean(gapminder, "year", "lifeExp")
+```
 
 ------------------------------------------------------------------------
 
-## Tidy Selection: Problems and Solutions
+## Tidy Selection: Allow arbitrary selection of variables
 
-As with data masking, tidy selection makes a common task easier at the
-cost of making a less common task harder. The solutions are similar to
-those described:
+You might want to allow the function user to select sets of (not
+necessarily sequential) columns, as they can when using tidyverse
+select(). Once again the solution is usually easy with curly-curly:
 
-1.  Embrace the function input vars using `{{ }}` - when the input is
-    not a string input
+> #### Solution 1:
+>
+> Unquoted arguments: Embrace the function input vars using `{{ }}` -
+> when the input is not a string input
 
-    ```{r slice_example}
-    slice_fun <- function(data, grouping_variable, columns, rows) {
-      data %>% 
-        group_by({{ grouping_variable }}) %>% 
-        select({{ columns }}) %>% 
-        slice(rows)
-    }
-    slice_fun(gapminder, continent, lifeExp:gdpPercap, 1)
-    ```
-
--   Alternatively - if you have string input (or don't want to propagate
-    data masking) then use `.data[[ ]]`:
-
-    ```{r}
-    slice_character_subset <- function(data, column, row_start, row_end) {
-      data %>% 
-        select(.data[[column]]) %>% 
-        slice(row_start:row_end)
-    }
-    slice_character_subset(gapminder, "pop", 1, 10)
-    ```
-
-## Using tidy evaluation in other {tidyverse} package functions: ggplot
-
-Finally, we can apply this same logic to other {tidyverse} package
-functions.
-
--   either embrace `{{ }}` the data variable names
-
--   or subset the data using `.data [[ ]]` and input strings to the
-    function call
-
-```{r}
-scatter_plot <- function(data_frame, x_axis, y_axis ) {
-  ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
-    geom_point(alpha = 0.5)
+```{r slice_example}
+slice_fun <- function(data, grouping_variable, columns, rows) {
+  data %>%
+    group_by({{ grouping_variable }}) %>%
+    select({{ grouping_variable }}, {{ columns }}) %>%
+    slice(rows)
 }
+slice_fun(gapminder, continent, lifeExp:gdpPercap, 1)
+slice_fun(gapminder, continent, where(is.double), 1)
 
-gapminder %>% 
-  gap_mean_name(year, lifeExp) %>% 
-  scatter_plot(year, mean_lifeExp)
-
-gapminder %>% 
-  gap_mean_name(continent, gdpPercap) %>% 
-  scatter_plot(continent, mean_gdpPercap)
-
-
-scatter_plot <- function(data_frame, x_axis, y_axis ) {
-  ggplot(data_frame, aes(x = .data[[x_axis]], y = .data[[y_axis]])) +
-    geom_point(alpha = 0.5)
-}
-
-gapminder %>% 
-  gap_mean_name(continent, gdpPercap) %>% 
-  scatter_plot("continent", "mean_gdpPercap")
 ```
 
-## What about with multiple data variables? - see `Extras.Rmd`
+-   Alternatively - if you have string inputs (or don't want to propagate
+    data masking), you can accept a set of column names as a vector:
+
+> #### Solution 2:
+>
+> Quoted arguments: Use all_of() - when the input is a list of strings
+> giving the variable names
+
+```{r}
+slice_character_subset <- function(data, columns, row_start, row_end) {
+  data %>%
+    select(all_of(columns)) %>%
+    slice(row_start:row_end)
+}
+slice_character_subset(gapminder, c("country", "year", "pop"), 1, 10)
+
+```
+
+## What about ggplot? - it works the same way! See `Extras.Rmd`
 
 ## Do you even need Tidy Eval? - see `Extras.Rmd`
 

@@ -15,23 +15,20 @@ library(gapminder)
 ## What about with multiple data variables?
 
 > #### SOLUTION A - Pass the dots `(…)`
->
-> Can only pass the dots once in a function! So only use when is one
-> pipeline input.
 
 ```{r pass_the_dots}
 #The dots are the last input parameter in the function call
 grouped_mean_dots <- function(data, summary_column, ...) {
   data %>%
     group_by(...) %>%
-    summarise("mean_{{summary_column}}" := mean({{ summary_column }}, na.rm = T))
+    summarise("mean_{{summary_column}}" := mean({{ summary_column }}, na.rm = T), .groups="keep")
 }
 
 grouped_mean_dots(gapminder, pop, continent, year)
 
 # Careful with string input vs data variables
 # What is this doing?
-grouped_mean_dots(gapminder, pop, "year")
+grouped_mean_dots(gapminder, pop, "continent", "year")
 #c.f.
 mean(gapminder$pop)
 ```
@@ -173,3 +170,80 @@ mtcars %>%
 ```
 
 ------------------------------------------------------------------------
+
+
+###  Do we ever need for loops?
+
+We might naively try to summarise two columns in a for loop:
+
+```{r for_loop}
+columns <- names(gapminder)[4:6]
+out <- rep(list(NULL), 3)
+for(col in seq_along(columns)){
+  out[[col]] <- gapminder %>%
+    summarise(mean = mean(columns[[col]], na.rm = T))
+}
+unlist(out)
+```
+
+It doesn't work because `columns[[col]]`, a string representing the name of a
+column in gapminder, is not recognised as a data variable within the context of
+the `mean` function. Now we can try again using the `.data` pronoun.
+
+```{r for_loop_solved}
+columns <- names(gapminder)[4:6]
+out <- rep(list(NULL), 3)
+for(col in columns){
+  out[[col]] <- gapminder %>%
+    summarise(mean = mean(.data[[col]]))
+}
+unlist(out)
+```
+
+It worked but it's ugly and we have an awkward output format. We can improve
+this by using the tidy selection function `across` to drop the for loop:
+```{r for_loop_replaced}
+columns <- names(gapminder)[4:6]
+gapminder %>%
+  summarise(across(all_of(columns), mean))
+# or, if we have parameters, use a dot to represent the current variable
+gapminder %>%
+    summarise(across(all_of(columns), ~mean(., na.rm = T)))
+
+
+```
+  > This actually means that for loops are rarely needed!
+  
+## Using tidy evaluation in other {tidyverse} package functions: ggplot
+
+Finally, we can apply this same logic to other {tidyverse} package
+functions.
+
+-   either embrace `{{ }}` the data variable names
+-   or subset the data using `.data[[ ]]` and input strings to the
+    function call
+
+```{r}
+scatter_plot <- function(data_frame, x_axis, y_axis ) {
+  ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
+    geom_point(alpha = 0.5)
+}
+
+gapminder %>%
+  gap_mean_name(year, lifeExp) %>%
+  scatter_plot(year, mean_lifeExp)
+
+gapminder %>%
+  gap_mean_name(continent, gdpPercap) %>%
+  scatter_plot(continent, mean_gdpPercap)
+
+
+scatter_plot <- function(data_frame, x_axis, y_axis ) {
+  ggplot(data_frame, aes(x = .data[[x_axis]], y = .data[[y_axis]])) +
+    geom_point(alpha = 0.5)
+}
+
+gapminder %>%
+  gap_mean_name(continent, gdpPercap) %>%
+  scatter_plot("continent", "mean_gdpPercap")
+```
