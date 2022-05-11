@@ -25,6 +25,8 @@ grouped_mean_dots <- function(data, summary_column, ...) {
 }
 
 grouped_mean_dots(gapminder, pop, continent, year)
+#Can also pass single inputs to (...)
+grouped_mean_dots(gapminder, pop, continent)
 
 # Careful with string input vs data variables
 # What is this doing?
@@ -36,22 +38,8 @@ mean(gapminder$pop)
 -   Note that using `(…)` perpetuates NSE/Data-masking to your bespoke
     function.
 
--   NOTE - pass the dots `(…)` is also very useful for single data
-    variable functions and for ggplot (can pass the dots to `aes()` or
-    `vars()`
-
-```{r ggplot_pas_the_dots}
-scatter_facet_plot <- function(data_frame, x_axis, y_axis, ...) {
-  ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
-    geom_point(alpha = 0.5) +
-    facet_wrap(vars(...))
-}
-
-gapminder %>% 
-  grouped_mean_dots(lifeExp, continent, year) %>% 
-  scatter_facet_plot(x_axis = year, y_axis = mean_lifeExp, continent)
-
-```
+-   NOTE HOWEVER - you can only pass one set of inputs to the (...) - so
+    you can't use it to specify group variables and summary variables!
 
 > #### SOLUTION B - use across()
 
@@ -169,8 +157,8 @@ iris %>% mutate_if(is.numeric, ~. / sd(.))
 #E.g. get mean of all numeric cols by all grouping variables
 my_gp_summarise <- function(data){
   data %>% 
-  group_by_if(is.factor) %>% 
-  summarise_if(is.numeric, mean)
+    group_by_if(is.factor) %>% 
+    summarise_if(is.numeric, mean)
 }
 #work on any dataset
 my_gp_summarise(gapminder)
@@ -186,8 +174,7 @@ my_summarise(gapminder, c("lifeExp", "pop"))
 
 ------------------------------------------------------------------------
 
-
-###  Do we ever need for loops?
+### Do we ever need for loops?
 
 We might naively try to summarise two columns in a for loop:
 
@@ -229,8 +216,8 @@ gapminder %>%
     summarise(across(all_of(columns), ~mean(., na.rm = T)))
 ```
 
-  > This actually means that for loops are rarely needed!
-  
+> This actually means that for loops are rarely needed!
+
 ## Using tidy evaluation in other {tidyverse} package functions: ggplot
 
 Finally, we can apply this same logic to other {tidyverse} package
@@ -238,7 +225,7 @@ functions.
 
 -   either embrace `{{ }}` the data variable names
 
-```{r}
+```{r ggplot_NSE_functions}
 scatter_plot <- function(data_frame, x_axis, y_axis ) {
   ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
     geom_point(alpha = 0.5)
@@ -251,8 +238,12 @@ gapminder %>%
 gapminder %>%
   gap_mean_name(continent, gdpPercap) %>%
   scatter_plot(continent, mean_gdpPercap)
+```
 
+-   or subset the data using `.data[[ ]]` and input strings to the
+    function call
 
+```{r}
 scatter_plot <- function(data_frame, x_axis, y_axis ) {
   ggplot(data_frame, aes(x = .data[[x_axis]], y = .data[[y_axis]])) +
     geom_point(alpha = 0.5)
@@ -261,4 +252,18 @@ scatter_plot <- function(data_frame, x_axis, y_axis ) {
 gapminder %>%
   gap_mean_name(continent, gdpPercap) %>%
   scatter_plot("continent", "mean_gdpPercap")
+```
+
+-   or pass the dots `(…)` - can pass the dots to `aes()` or `vars()`
+
+```{r ggplot_pass_the_dots}
+scatter_facet_plot <- function(data_frame, x_axis, y_axis, ...) {
+  ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(vars(...))
+}
+
+gapminder %>% 
+  grouped_mean_dots(lifeExp, continent, year) %>% 
+  scatter_facet_plot(x_axis = year, y_axis = mean_lifeExp, continent)
 ```
