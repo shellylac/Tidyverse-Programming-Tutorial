@@ -156,21 +156,32 @@ life_v_pop(mtcars)
 
     -   No data masking = take objects (not blueprints)
 
-```{r map_function_alternatives}
-#Function scales all numeric variables by SD (will work on any dataset)
-gapminder %>% mutate_if(is.numeric, ~. / sd(.))
-mtcars %>%  mutate_if(is.numeric, ~. / sd(.))
+```{r nonNSE_function_alternatives}
+#Scale all numeric variables by SD (function will work on any dataset)
+my_scale <- function(data){
+  data %>% mutate_if(is.numeric, ~. / sd(.))
+}
+my_scale(gapminder)
+my_scale(mtcars)
+# Don't necessarily need to wrap in a function...
+iris %>% mutate_if(is.numeric, ~. / sd(.))
+
+#E.g. get mean of all numeric cols by all grouping variables
+my_gp_summarise <- function(data){
+  data %>% 
+  group_by_if(is.factor) %>% 
+  summarise_if(is.numeric, mean)
+}
+#work on any dataset
+my_gp_summarise(gapminder)
+my_gp_summarise(mtcars)
 
 #Can use string vectors directly
-gapminder %>% summarise_at(c("pop", "lifeExp"), mean)
-gapminder %>% 
-  group_by_if(is.factor) %>% 
-  summarise_if(is.numeric, mean)
+my_summarise <- function(data, vars){
+  data %>% summarise_at(vars, mean)
+}
+my_summarise(gapminder, c("lifeExp", "pop"))
 
-#work on any dataset
-mtcars %>% 
-  group_by_if(is.factor) %>% 
-  summarise_if(is.numeric, mean)
 ```
 
 ------------------------------------------------------------------------
