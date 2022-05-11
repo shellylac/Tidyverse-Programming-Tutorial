@@ -402,12 +402,12 @@ slice_fun(gapminder, continent, where(is.double), 1)
 > data masking):
 
 ```{r}
-slice_character_subset <- function(data, columns, row_start, row_end) {
+slice_stringinputs <- function(data, columns, row_start, row_end) {
   data %>%
     select(all_of(columns)) %>%
     slice(row_start:row_end)
 }
-slice_character_subset(gapminder, c("country", "year", "pop"), 1, 10)
+slice_stringinputs(gapminder, c("country", "year", "pop"), 1, 10)
 
 ```
 
