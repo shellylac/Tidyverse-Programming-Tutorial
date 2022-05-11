@@ -7,7 +7,7 @@ Welcome to the programming with {tidyverse} functions worksheet! This worksheet 
 
 Run the cell below to load the libraries needed for this worksheet, as well as the test file so you can check your answers as you go!
 
-```{r}
+```{r load_prelims, message=FALSE, warning=FALSE}
 library(palmerpenguins)
 library(tidyverse)
 source("test_worksheet.R")
@@ -42,10 +42,7 @@ The `get_rectangle` function shown below does not work for unquoted column names
 
 ```{r}
 # your code here
-get_rectangle <- function(data, row_filter, column_range = everything()) {
-        data %>% 
-            filter({{ row_filter}} ) %>% 
-            select({{ column_range }})
+get_rectangle <- function() {
 }
 
 get_rectangle(penguins, body_mass_g > 3000, species:island)
@@ -70,9 +67,7 @@ D. `{{` quotes the column names, and then unquotes and evaluates them inside the
 Create a character vector of the answers above you think are correct, for example, `c("C", "D")`. Bind the name `answer_2` to this vector.
 
 ```{r}
-answer_2 <- c("B", "D")
-# your code here
-answer_2
+answer_2 <- c()
 ```
 
 ```{r}
@@ -105,10 +100,7 @@ The `group_index` function shown below does not work. Your task is to identify w
 
 ```{r}
 # your code here
-group_index <- function(data, group_col, out_col) {
-    data %>% 
-        group_by({{ group_col }}) %>% 
-        mutate({{ out_col }} := row_number())
+group_index <- function() {
 }
 
 group_index(penguins, species, sp_idx)
@@ -124,13 +116,11 @@ Take the function you fixed in exercise 1 and **rename it** `get_rectangle2`. No
 
 ```{r}
 # your code here
-get_rectangle2 <- function(data, row_filter, ... ) {
-        data %>% 
-            filter({{ row_filter}} ) %>% 
-            select(...)
+get_rectangle2 <- function() {
 }
 
 get_rectangle2(penguins, body_mass_g > 3000, everything())
+
 ```
 
 ```{r}
@@ -158,11 +148,9 @@ Write a function called `select_and_arrange` whose documentation we provide belo
 
 ```{r}
 # your code here
-select_and_arrange <- function (data, sort_by, ...){
-    data %>% 
-        arrange({{ sort_by }}) %>% 
-        select(...)
+select_and_arrange <- function (){
 }
+
 select_and_arrange(penguins, body_mass_g, species:island, sex)
 ```
 
