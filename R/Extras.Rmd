@@ -94,20 +94,21 @@ gap_mean_name_multicols(gapminder, c(continent, year), c(lifeExp, pop, gdpPercap
 
 ```
 
-> #### SOLUTION C - for STRING INPUT can use  string vetor helpers, e.g. `all_of()` / `any_of()` or scoped dplyr verbs e.g. `summarise_at()` 
+> #### SOLUTION C - for STRING INPUT can use string vector helpers: `all_of()` / `any_of()` or scoped dplyr verbs e.g. `summarise_at()`
 >
-> Can't use the `.data[[ ]]` trick we used for single string input. The
-> `.data` pronoun can only be subsetted with single column names. It
-> doesn't support single-bracket indexing (i.e. .`data[ ]`):
+> When we have a vector of string inputs we can't use the `.data[[ ]]`
+> trick we used for single string input. The `.data` pronoun can only be
+> sub-setted with single column names. It doesn't support single-bracket
+> indexing (i.e. .`data[ ]`):
 
 ```{r strings_helper_funs}
-slice_character <- function(data, grouping_variable, columns, row_start, row_end) {
+slice_stringinputs_multgps <- function(data, grouping_variable, columns, row_start, row_end) {
   data %>% 
     group_by(across(all_of(grouping_variable))) %>% 
     select(all_of(columns)) %>% 
     slice(row_start:row_end)
 }
-slice_character(gapminder, c("continent", "country"), c("pop", "lifeExp"), 1, 3)
+slice_stringinputs_multgps(gapminder, c("continent", "country"), c("pop", "lifeExp"), 1, 3)
 
 ```
 
@@ -147,8 +148,11 @@ life_v_pop(mtcars)
 
 -   Scoped verbs for `mutate_` / `summarise_` / `filter_` / `group_by_`
 
-    -   `_all` --\> map over all columns; `_if` --\> map over columns
-        selected by condition; `_at` --\> map over a custom selection
+    -   `_all` --\> map over all columns
+
+    -   `_if` --\> map over columns selected by condition
+
+    -   `_at` --\> map over a custom selection
 
     -   No data masking = take objects (not blueprints)
 
