@@ -10,6 +10,7 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(gapminder)
+options(dplyr.summarise.inform = FALSE)
 ```
 
 ## What about with multiple data variables?
@@ -21,7 +22,7 @@ library(gapminder)
 grouped_mean_dots <- function(data, summary_column, ...) {
   data %>%
     group_by(...) %>%
-    summarise("mean_{{summary_column}}" := mean({{ summary_column }}, na.rm = T), .groups="keep")
+    summarise("mean_{{summary_column}}" := mean({{ summary_column }}, na.rm = T))
 }
 
 grouped_mean_dots(gapminder, pop, continent, year)
