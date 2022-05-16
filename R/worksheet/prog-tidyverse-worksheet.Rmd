@@ -160,9 +160,9 @@ test_5()
 
 ### Exercise 6
 
-This is your last worksheet question! This one is a choose your own adventure. Write any function that takes a data frame, and an quoted column name. Use either `{{` or `..` (or both!) to deal with the unquoted column name(s). All you need to do is make sure it works. Be creative!
+This is your last worksheet question! This one is a choose your own adventure. Write any function that takes a data frame, and an unquoted column name. Use either `{{` or `...` (or both!) to deal with the unquoted column name(s). All you need to do is make sure it works. Be creative!
 
-We provide a function name so we can test that you used `{{` or `..`. Feel free to add whatever else you want to it, just don't change the `have_fun` function name.
+We provide a function name so we can test that you used `{{` or `...`. Feel free to add whatever else you want to it, just don't change the `have_fun` function name.
 
 ```{r}
 have_fun <- function(data) { # add as many arguments as you want!
