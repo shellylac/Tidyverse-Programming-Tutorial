@@ -39,7 +39,7 @@ mean(gapminder$pop)
     function.
 
 -   NOTE HOWEVER - you can only pass one set of inputs to the (...) - so
-    you can't use it to specify group variables and summary variables!
+    you can't use it to specify group variables *and* summary variables!
 
 > #### SOLUTION B - use across()
 
