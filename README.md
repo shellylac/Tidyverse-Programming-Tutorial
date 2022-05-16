@@ -1,6 +1,6 @@
 # Programming with the Tidyverse
 
-## A Code Clinic Tutorial for the staff/students at the Big Data Institute (Oxford)
+## A Code Clinic tutorial for staff and students at the [Oxford Big Data Institute](https://www.bdi.ox.ac.uk/)
 
 R’s Tidyverse packages make interactive data exploration and modelling fast and fluid (and fun!?). The flip side of this ease of interrogating your data and building models is that using tidyr/dplyr/ggplot code indirectly (i.e. non-interactively within functions or loops) is more challenging. This code clinic will demonstrate the issues that arise when trying to use dplyr/tidyr verbs non-interactively and show you a number of recipes to solve common problems encountered in programming with the Tidyverse.
 
