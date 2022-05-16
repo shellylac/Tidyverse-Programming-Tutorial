@@ -10,6 +10,7 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(gapminder)
+options(dplyr.summarise.inform = FALSE)
 ```
 
 # Outline
@@ -139,8 +140,8 @@ gapminder %>% filter(continent == "Europe", pop < 1000000)
 This is (one of the reasons) why the tidyverse is so popular and easy to
 use!
 
-We want our functions to be like that, too! So how does the tidyverse do
-this? The answer lies in non-standard evaluation.
+So how does the tidyverse do this? The answer lies in non-standard
+evaluation.
 
 ### NSE = Non-standard evaluation (VERY VERY briefly!)
 
@@ -156,8 +157,8 @@ And not just in tidyverse - ALSO in base R!
 
 ```{r NSE_baseR}
 subset(gapminder, continent=="Asia") # this works because subset delays the 
-                                     # evaluation of continent=="Asia" until it 
-                                     # is run when it changes its 
+                                     # evaluation of continent=="Asia" 
+                                     # until it is run when it changes its 
                                      # meaning/environment so it relates to gapminder
 gapminder[continent=="Asia", ] # Does this work?
                                # NO! continent is not defined in our environment
@@ -265,18 +266,18 @@ Here are some common problems and a few hints and tips.
 
 ```{r unexp_masking}
 # Example of Unexpected masking
-# An object in your workspace (which you want to use) has the same name as a 
-# dataset column. 
+# An object in your workspace (which you want to use) has the 
+# same name as a dataset column. 
+n <- sample.int(200, size = 1)
 add_something <- function(data, col) {
-  n <- sample.int(200, size = 1)
-  data %>% mutate(y = {{ col }} * z + n)
+  data %>% mutate(z = {{ col }} * y + n)
 }
 
-data1 <- data.frame(x = 100, z = 10)
-data2 <- data.frame(x = 100, z = 10, n = "argh")
+data1 <- data.frame(x = 100, y = 10)
+data2 <- data.frame(x = 100, y = 10, n = "argh")
 
-data1 %>% add_something(x) %>% pull(y)
-data2 %>% add_something(x) %>% pull(y)
+data1 %>% add_something(x) %>% pull(z)
+data2 %>% add_something(x) %>% pull(z)
 
 ```
 
@@ -290,10 +291,11 @@ environment variable `n`!
 
 ```{r unexp_mask_soln}
 #Specify .data and .env pronouns
+n <- sample.int(200, size=1)
+y <- NULL
+
 add_something <- function(data, col) {
-  n <- sample.int(200, size=1)
-  z <- 20
-  data %>% mutate(y = {{ col }} * .data$z + .env$n)
+  data %>% mutate(z = {{ col }} * .data$y + .env$n)
 }
 
 data1 %>% add_something(x) %>% pull(y)
@@ -308,10 +310,13 @@ environmental variables.
 ```{r name_assignment}
 group_mean_name <- function(data, grouping_variable, summary_column) {
   result_name <- paste0("mean_", names(data %>% select( {{ summary_column }} )))
+  #print the result_name to screen
+  print(result_name)
   data %>%
     group_by({{ grouping_variable }}) %>%
     summarise(result_name = mean({{ summary_column }}, na.rm = T))
 }
+
 group_mean_name(gapminder, country, lifeExp)
 # Doesn't work! The column has been named 'result_name'.
 ```
@@ -373,15 +378,16 @@ group_mean(gapminder, "year", "lifeExp")
 
 ## Tidy Selection: Allow arbitrary selection of variables
 
-You might want to allow the function user to select sets of (not
-necessarily sequential) columns, as they can when using tidyverse
-`select()`. In simple cases the solution is obtained with curly-curly
-`{{ }}`:
+You might want to create a function that accepts sets of (not
+necessarily sequential) columns as input (similar to how tidyverse
+`select()` functions work).
+
+In simple cases the solution is obtained with curly-curly `{{ }}`:
 
 > #### Solution 1:
 >
 > [Unquoted arguments + tidy-select]{.underline}: Embrace the function
-> input vars using `{{ }}` when using tidyverse functions with
+> input variables using `{{ }}` when using tidyverse functions with
 > tidy-select:
 
 ```{r slice_example}
@@ -391,6 +397,7 @@ slice_fun_tidy <- function(data, select_columns, rows) {
     select({{ select_columns }}) %>%
     slice(rows)
 }
+
 slice_fun_tidy(gapminder, lifeExp:gdpPercap, 1)
 slice_fun_tidy(gapminder, where(is.double), 1)
 
@@ -399,7 +406,7 @@ slice_fun_tidy(gapminder, where(is.double), 1)
 > #### Solution 2:
 >
 > [Unquoted arguments more generally]{.underline}: Use across() and
-> `{{ }}` to combine the function input vars when using tidyverse
+> `{{ }}` to combine the function input variables when using tidyverse
 > functions WITHOUT tidy-select:
 
 ```{r slice_example}
@@ -409,15 +416,21 @@ slice_fun_untidy <- function(data, grouping_variable, rows) {
     group_by(across({{ grouping_variable }})) %>%
     slice(rows)
 }
+
 slice_fun_untidy(gapminder, c(country,year), 1)
 
 ```
 
 > #### Solution 3:
 >
-> [Quoted arguments]{.underline}: Use `all_of()` when the input is a
-> list of strings giving the variable names (or don't want to propagate
-> data masking):
+> [Quoted arguments]{.underline}: Use `all_of()/any_of()` when the input
+> is a list of strings giving the variable names (or you don't want to
+> propagate data masking).
+>
+> -   `all_of()` acts on all of the columns listed (they must all
+>     exist).
+> -   `any_of()` acts on all of the columns listed, if they exist, and
+>     ignores missing ones
 
 ```{r}
 slice_stringinputs <- function(data, columns, rows) {
@@ -425,6 +438,7 @@ slice_stringinputs <- function(data, columns, rows) {
     select(all_of(columns)) %>%
     slice(rows)
 }
+
 slice_stringinputs(gapminder, c("country", "year"), 1)
 
 ## Again you need 'across' when using non-<tidy-select> functions
@@ -460,7 +474,7 @@ YouTube videos by Lionel Henry (who wrote rlang):
 -   <https://www.youtube.com/watch?v=SW_TUkPXSmA>
 
 And this git repo by Dr Tiffany Timbers (this tutorial and worksheet is
-modeled on hers!) #Attribution
+modeled on hers!) **#Attribution!**
 
 -   <https://github.com/ttimbers/prog-tidyverse-functions>
 
