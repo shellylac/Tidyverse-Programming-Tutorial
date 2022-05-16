@@ -104,8 +104,8 @@ slice_stringinputs_multgps(gapminder, c("continent", "country"), c("pop", "lifeE
 ```{r scoped_verbs_strings}
 gap_means_multigps <- function(data, grouping_variables, summary_columns){
   data %>%
-    group_by_at(vars(grouping_variables)) %>%
-    summarise_at(vars(summary_columns), mean)
+    group_by_at(all_of(grouping_variables)) %>%
+    summarise_at(all_of(summary_columns), mean)
 }
 gap_means_multigps(gapminder, c("continent", "country"), c("pop", "lifeExp"))
 ```
