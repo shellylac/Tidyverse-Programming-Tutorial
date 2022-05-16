@@ -375,39 +375,65 @@ group_mean(gapminder, "year", "lifeExp")
 
 You might want to allow the function user to select sets of (not
 necessarily sequential) columns, as they can when using tidyverse
-`select()`. Once again the solution is usually obtained with curly-curly
+`select()`. In simple cases the solution is obtained with curly-curly
 `{{ }}`:
 
 > #### Solution 1:
 >
-> [Unquoted arguments]{.underline}: Embrace the function input vars
-> using `{{ }}` when the input is not a string input:
+> [Unquoted arguments + tidy-select]{.underline}: Embrace the function
+> input vars using `{{ }}` when using tidyverse functions with
+> tidy-select:
 
 ```{r slice_example}
-slice_fun <- function(data, grouping_variable, columns, rows) {
+slice_fun_tidy <- function(data, select_columns, rows) {
   data %>%
-    group_by({{ grouping_variable }}) %>%
-    select({{ grouping_variable }}, {{ columns }}) %>%
+    ## select() uses <tidy-select>
+    select({{ select_columns }}) %>%
     slice(rows)
 }
-slice_fun(gapminder, continent, lifeExp:gdpPercap, 1)
-slice_fun(gapminder, continent, where(is.double), 1)
+slice_fun_tidy(gapminder, lifeExp:gdpPercap, 1)
+slice_fun_tidy(gapminder, where(is.double), 1)
 
 ```
 
 > #### Solution 2:
+>
+> [Unquoted arguments more generally]{.underline}: Use across() and
+> `{{ }}` to combine the function input vars when using tidyverse
+> functions WITHOUT tidy-select:
+
+```{r slice_example}
+slice_fun_untidy <- function(data, grouping_variable, rows) {
+  data %>%
+    ## group_by() doesn't use <tidy-select>
+    group_by(across({{ grouping_variable }})) %>%
+    slice(rows)
+}
+slice_fun_untidy(gapminder, c(country,year), 1)
+
+```
+
+> #### Solution 3:
 >
 > [Quoted arguments]{.underline}: Use `all_of()` when the input is a
 > list of strings giving the variable names (or don't want to propagate
 > data masking):
 
 ```{r}
-slice_stringinputs <- function(data, columns, row_start, row_end) {
+slice_stringinputs <- function(data, columns, rows) {
   data %>%
     select(all_of(columns)) %>%
-    slice(row_start:row_end)
+    slice(rows)
 }
-slice_stringinputs(gapminder, c("country", "year", "pop"), 1, 10)
+slice_stringinputs(gapminder, c("country", "year"), 1)
+
+## Again you need 'across' when using non-<tidy-select> functions
+slice_stringinputs <- function(data, columns, rows) {
+  data %>%
+    group_by(across(all_of(columns))) %>%
+    slice(rows)
+}
+slice_stringinputs(gapminder, c("country", "year"), 1)
 
 ```
 
