@@ -6,6 +6,14 @@ editor_options:
     wrap: 72
 ---
 
+# Extra Recipes for Programming with the Tidyverse
+
+This worksheet contains some examples of how you can deal with more
+complex scenarios, when the simple solutions covered in the tutorial
+don't work!
+
+
+
 ```{r setup, include=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
