@@ -42,7 +42,10 @@ The `get_rectangle` function shown below does not work for unquoted column names
 
 ```{r}
 # your code here
-get_rectangle <- function() {
+get_rectangle <- function(data, row_filter, column_range = everything()) {
+        data %>% 
+            filter({{ row_filter}} ) %>% 
+            select({{ column_range }})
 }
 
 get_rectangle(penguins, body_mass_g > 3000, species:island)
@@ -67,7 +70,9 @@ D. `{{` quotes the column names, and then unquotes and evaluates them inside the
 Create a character vector of the answers above you think are correct, for example, `c("C", "D")`. Bind the name `answer_2` to this vector.
 
 ```{r}
-answer_2 <- c()
+answer_2 <- c("B", "D")
+# your code here
+answer_2
 ```
 
 ```{r}
@@ -100,7 +105,10 @@ The `group_index` function shown below does not work. Your task is to identify w
 
 ```{r}
 # your code here
-group_index <- function() {
+group_index <- function(data, group_col, out_col) {
+    data %>% 
+        group_by({{ group_col }}) %>% 
+        mutate({{ out_col }} := row_number())
 }
 
 group_index(penguins, species, sp_idx)
@@ -116,11 +124,14 @@ Take the function you fixed in exercise 1 and **rename it** `get_rectangle2`. No
 
 ```{r}
 # your code here
-get_rectangle2 <- function() {
+get_rectangle2 <- function(data, row_filter, ... ) {
+        data %>% 
+            filter({{ row_filter}} ) %>% 
+            select(...)
 }
 
 get_rectangle2(penguins, body_mass_g > 3000, everything())
-
+get_rectangle2(penguins, body_mass_g > 3000, is.double)
 ```
 
 ```{r}
@@ -148,9 +159,11 @@ Write a function called `select_and_arrange` whose documentation we provide belo
 
 ```{r}
 # your code here
-select_and_arrange <- function (){
+select_and_arrange <- function (data, sort_by, ...){
+    data %>% 
+        arrange({{ sort_by }}) %>% 
+        select(...)
 }
-
 select_and_arrange(penguins, body_mass_g, species:island, sex)
 ```
 
@@ -160,9 +173,9 @@ test_5()
 
 ### Exercise 6
 
-This is your last worksheet question! This one is a choose your own adventure. Write any function that takes a data frame, and an unquoted column name. Use either `{{` or `...` (or both!) to deal with the unquoted column name(s). All you need to do is make sure it works. Be creative!
+This is your last worksheet question! This one is a choose your own adventure. Write any function that takes a data frame, and an quoted column name. Use either `{{` or `..` (or both!) to deal with the unquoted column name(s). All you need to do is make sure it works. Be creative!
 
-We provide a function name so we can test that you used `{{` or `...`. Feel free to add whatever else you want to it, just don't change the `have_fun` function name.
+We provide a function name so we can test that you used `{{` or `..`. Feel free to add whatever else you want to it, just don't change the `have_fun` function name.
 
 ```{r}
 have_fun <- function(data) { # add as many arguments as you want!

@@ -6,10 +6,17 @@ editor_options:
     wrap: 72
 ---
 
+# Extra Recipes for Programming with the Tidyverse
+
+This worksheet contains some examples of how you can deal with more
+complex scenarios, when the simple solutions covered in the tutorial
+don't work!
+
 ```{r setup, include=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(gapminder)
+options(dplyr.summarise.inform = FALSE)
 ```
 
 ## What about with multiple data variables?
@@ -21,10 +28,13 @@ library(gapminder)
 grouped_mean_dots <- function(data, summary_column, ...) {
   data %>%
     group_by(...) %>%
-    summarise("mean_{{summary_column}}" := mean({{ summary_column }}, na.rm = T), .groups="keep")
+    summarise("mean_{{summary_column}}" := mean({{ summary_column }}, na.rm = T))
 }
 
 grouped_mean_dots(gapminder, pop, continent, year)
+
+#Can also pass single inputs to (...)
+grouped_mean_dots(gapminder, pop, continent)
 
 # Careful with string input vs data variables
 # What is this doing?
@@ -36,22 +46,8 @@ mean(gapminder$pop)
 -   Note that using `(…)` perpetuates NSE/Data-masking to your bespoke
     function.
 
--   NOTE - pass the dots `(…)` is also very useful for single data
-    variable functions and for ggplot (can pass the dots to `aes()` or
-    `vars()`
-
-```{r ggplot_pas_the_dots}
-scatter_facet_plot <- function(data_frame, x_axis, y_axis, ...) {
-  ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
-    geom_point(alpha = 0.5) +
-    facet_wrap(vars(...))
-}
-
-gapminder %>% 
-  grouped_mean_dots(lifeExp, continent, year) %>% 
-  scatter_facet_plot(x_axis = year, y_axis = mean_lifeExp, continent)
-
-```
+-   NOTE also that you can only pass one set of inputs to the (...) - so
+    you can't use it to specify group variables *and* summary variables!
 
 > #### SOLUTION B - use across()
 
@@ -94,30 +90,43 @@ gap_mean_name_multicols(gapminder, c(continent, year), c(lifeExp, pop, gdpPercap
 
 ```
 
-> #### SOLUTION C - for STRING INPUT can use  string vetor helpers, e.g. `all_of()` / `any_of()` or scoped dplyr verbs e.g. `summarise_at()` 
+> #### SOLUTION C - for STRING INPUT can use string vector helpers:
 >
-> Can't use the `.data[[ ]]` trick we used for single string input. The
-> `.data` pronoun can only be subsetted with single column names. It
-> doesn't support single-bracket indexing (i.e. .`data[ ]`):
+> `all_of()` / `any_of()`.
+>
+> When we have a vector of string inputs we can't use the `.data[[ ]]`
+> trick we used for single string input. The `.data` pronoun can only be
+> subsetted with single column names. It doesn't support single-bracket
+> indexing (i.e. .`data[ ]`). Instead we can use `all_of()` or
+> `any_of()`.
+>
+> -   `all_of()` acts on all of the columns listed (they must all
+>     exist).
+> -   `any_of()` acts on all of the columns listed, if they exist, and
+>     ignores missing ones
 
 ```{r strings_helper_funs}
-slice_character <- function(data, grouping_variable, columns, row_start, row_end) {
+slice_stringinputs_multgps <- function(data, grouping_variable, columns, row_start, row_end) {
   data %>% 
     group_by(across(all_of(grouping_variable))) %>% 
     select(all_of(columns)) %>% 
     slice(row_start:row_end)
 }
-slice_character(gapminder, c("continent", "country"), c("pop", "lifeExp"), 1, 3)
+
+slice_stringinputs_multgps(gapminder, c("continent", "country"), c("pop", "lifeExp"), 1, 3)
 
 ```
 
-```{r scoped_verbs_strings}
-gap_means_multigps <- function(data, grouping_variables, summary_columns){
-  data %>%
-    group_by_at(vars(grouping_variables)) %>%
-    summarise_at(vars(summary_columns), mean)
+```{r strings_any_of}
+slice_stringinputs_multgps <- function(data, grouping_variable, columns, row_start, row_end) {
+  data %>% 
+    group_by(across(any_of(grouping_variable))) %>% 
+    select(any_of(columns)) %>% 
+    slice(row_start:row_end)
 }
-gap_means_multigps(gapminder, c("continent", "country"), c("pop", "lifeExp"))
+
+slice_stringinputs_multgps(gapminder, c("continent", "country", "missing"), c("deleted", "pop", "lifeExp"), 1, 3)
+
 ```
 
 ## Do you even need Tidy Eval?
@@ -147,103 +156,143 @@ life_v_pop(mtcars)
 
 -   Scoped verbs for `mutate_` / `summarise_` / `filter_` / `group_by_`
 
-    -   `_all` --\> map over all columns; `_if` --\> map over columns
-        selected by condition; `_at` --\> map over a custom selection
+    -   `_all` --\> map over all columns
+
+    -   `_if` --\> map over columns selected by condition
+
+    -   `_at` --\> map over a custom selection
 
     -   No data masking = take objects (not blueprints)
 
-```{r map_function_alternatives}
-#Function scales all numeric variables by SD (will work on any dataset)
-gapminder %>% mutate_if(is.numeric, ~. / sd(.))
-mtcars %>%  mutate_if(is.numeric, ~. / sd(.))
+```{r nonNSE_function_alternatives}
+#Scale all numeric variables by SD (function will work on any dataset)
+my_scale <- function(data){
+  data %>% mutate_if(is.numeric, ~. / sd(.))
+}
+
+my_scale(gapminder)
+my_scale(mtcars)
+
+# Don't necessarily need to wrap in a function...
+iris %>% mutate_if(is.numeric, ~. / sd(.))
+
+#Another example -> mean of all numeric cols by all grouping variables
+my_gp_summarise <- function(data){
+  data %>% 
+    group_by_if(is.factor) %>% 
+    summarise_if(is.numeric, mean)
+}
+
+# works on any dataset
+my_gp_summarise(gapminder)
+my_gp_summarise(mtcars)
 
 #Can use string vectors directly
-gapminder %>% summarise_at(c("pop", "lifeExp"), mean)
-gapminder %>% 
-  group_by_if(is.factor) %>% 
-  summarise_if(is.numeric, mean)
+my_summarise <- function(data, variables){
+  data %>% summarise_at(variables, mean)
+}
 
-#work on any dataset
-mtcars %>% 
-  group_by_if(is.factor) %>% 
-  summarise_if(is.numeric, mean)
+my_summarise(gapminder, c("lifeExp", "pop"))
+
 ```
 
 ------------------------------------------------------------------------
 
-
-###  Do we ever need for loops?
+### Do we ever need for loops?
 
 We might naively try to summarise two columns in a for loop:
 
 ```{r for_loop}
 columns <- names(gapminder)[4:6]
 out <- rep(list(NULL), 3)
+
 for(col in seq_along(columns)){
   out[[col]] <- gapminder %>%
     summarise(mean = mean(columns[[col]], na.rm = T))
 }
+
 unlist(out)
 ```
 
-It doesn't work because `columns[[col]]`, a string representing the name of a
-column in gapminder, is not recognised as a data variable within the context of
-the `mean` function. Now we can try again using the `.data` pronoun.
+It doesn't work because `columns[[col]]`, a string representing the name
+of a column in gapminder, is not recognised as a data variable within
+the context of the `mean` function. Now we can try again using the
+`.data` pronoun.
 
 ```{r for_loop_solved}
 columns <- names(gapminder)[4:6]
 out <- rep(list(NULL), 3)
+
 for(col in columns){
   out[[col]] <- gapminder %>%
     summarise(mean = mean(.data[[col]]))
 }
+
 unlist(out)
 ```
 
-It worked but it's ugly and we have an awkward output format. We can improve
-this by using the tidy selection function `across` to drop the for loop:
+It worked but it's ugly and we have an awkward output format. We can
+improve this by using the tidy selection function `across` to drop the
+for loop:
+
 ```{r for_loop_replaced}
 columns <- names(gapminder)[4:6]
 gapminder %>%
   summarise(across(all_of(columns), mean))
+
 # or, if we have parameters, use a dot to represent the current variable
 gapminder %>%
-    summarise(across(all_of(columns), ~mean(., na.rm = T)))
-
-
+    summarise(across(all_of(columns), ~ mean(., na.rm = T)))
 ```
-  > This actually means that for loops are rarely needed!
-  
+
+> This actually means that for loops are rarely needed!
+
 ## Using tidy evaluation in other {tidyverse} package functions: ggplot
 
 Finally, we can apply this same logic to other {tidyverse} package
 functions.
 
 -   either embrace `{{ }}` the data variable names
--   or subset the data using `.data[[ ]]` and input strings to the
-    function call
 
-```{r}
+```{r ggplot_NSE_functions}
 scatter_plot <- function(data_frame, x_axis, y_axis ) {
   ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
     geom_point(alpha = 0.5)
 }
 
 gapminder %>%
-  gap_mean_name(year, lifeExp) %>%
+  gap_mean_name_multicols(year, lifeExp) %>%
   scatter_plot(year, mean_lifeExp)
 
 gapminder %>%
-  gap_mean_name(continent, gdpPercap) %>%
+  gap_mean_name_multicols(continent, gdpPercap) %>%
   scatter_plot(continent, mean_gdpPercap)
+```
 
+-   or subset the data using `.data[[ ]]` and input strings to the
+    function call
 
+```{r}
 scatter_plot <- function(data_frame, x_axis, y_axis ) {
   ggplot(data_frame, aes(x = .data[[x_axis]], y = .data[[y_axis]])) +
     geom_point(alpha = 0.5)
 }
 
 gapminder %>%
-  gap_mean_name(continent, gdpPercap) %>%
+  gap_mean_name_multicols(continent, gdpPercap) %>%
   scatter_plot("continent", "mean_gdpPercap")
+```
+
+-   or pass the dots `(…)` - can pass the dots to `aes()` or to `vars()`
+
+```{r ggplot_pass_the_dots}
+scatter_facet_plot <- function(data_frame, x_axis, y_axis, ...) {
+  ggplot(data_frame, aes(x = {{ x_axis }}, y = {{ y_axis }})) +
+    geom_point(alpha = 0.5) +
+    facet_wrap(vars(...))
+}
+
+gapminder %>% 
+  grouped_mean_dots(lifeExp, continent, year) %>% 
+  scatter_facet_plot(x_axis = year, y_axis = mean_lifeExp, continent)
 ```
