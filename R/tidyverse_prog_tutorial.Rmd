@@ -268,8 +268,8 @@ Here are some common problems and a few hints and tips.
 # Example of Unexpected masking
 # An object in your workspace (which you want to use) has the 
 # same name as a dataset column. 
-n <- sample.int(200, size = 1)
 add_something <- function(data, col) {
+  n <- sample.int(200, size=1)
   data %>% mutate(z = {{ col }} * y + n)
 }
 
@@ -291,18 +291,16 @@ environment variable `n`!
 
 ```{r unexp_mask_soln}
 #Specify .data and .env pronouns
-n <- sample.int(200, size=1)
-y <- NULL
-
 add_something <- function(data, col) {
+  n <- sample.int(200, size=1)
   data %>% mutate(z = {{ col }} * .data$y + .env$n)
 }
 
 data1 <- data.frame(x = 100, y = 10)
 data2 <- data.frame(x = 100, y = 10, n = "argh")
 
-data1 %>% add_something(x) %>% pull(y)
-data2 %>% add_something(x) %>% pull(y)
+data1 %>% add_something(x) %>% pull(z)
+data2 %>% add_something(x) %>% pull(z)
 ```
 
 ### **2. Naming of variables in functions**
