@@ -76,7 +76,7 @@ the above code that many times! We need to write re-usable code.
 SO let's see what happens when we try to turn the above code into a
 function:
 
-```{r try_function}
+```{r try_function, eval=FALSE}
 # Place code within function
 
 group_mean <- function(data, grouping_variable, summary_column){
@@ -155,7 +155,7 @@ implement, use, and abuse Non-Standard Evaluation - but R does!*
 
 And not just in tidyverse - ALSO in base R!
 
-```{r NSE_baseR}
+```{r NSE_baseR, eval=FALSE}
 subset(gapminder, continent=="Asia") # this works because subset delays the 
                                      # evaluation of continent=="Asia" 
                                      # until it is run when it changes its 
@@ -264,7 +264,7 @@ Here are some common problems and a few hints and tips.
 
 ### **1. Unexpected masking**
 
-```{r unexp_masking}
+```{r unexp_masking, eval = FALSE}
 # Example of Unexpected masking
 # An object in your workspace (which you want to use) has the 
 # same name as a dataset column. 
@@ -297,6 +297,9 @@ y <- NULL
 add_something <- function(data, col) {
   data %>% mutate(z = {{ col }} * .data$y + .env$n)
 }
+
+data1 <- data.frame(x = 100, y = 10)
+data2 <- data.frame(x = 100, y = 10, n = "argh")
 
 data1 %>% add_something(x) %>% pull(y)
 data2 %>% add_something(x) %>% pull(y)
@@ -390,7 +393,7 @@ In simple cases the solution is obtained with curly-curly `{{ }}`:
 > input variables using `{{ }}` when using tidyverse functions with
 > tidy-select:
 
-```{r slice_example}
+```{r slice_example_1}
 slice_fun_tidy <- function(data, select_columns, rows) {
   data %>%
     ## select() uses <tidy-select>
@@ -409,7 +412,7 @@ slice_fun_tidy(gapminder, where(is.double), 1)
 > `{{ }}` to combine the function input variables when using tidyverse
 > functions WITHOUT tidy-select:
 
-```{r slice_example}
+```{r slice_example_2}
 slice_fun_untidy <- function(data, grouping_variable, rows) {
   data %>%
     ## group_by() doesn't use <tidy-select>
