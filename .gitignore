@@ -32,8 +32,6 @@ vignettes/*.pdf
 *.knit.md
 # R Environment Variables
 .Renviron
-# pkgdown site
-docs/
 # translation temp files
 po/*~
 # RStudio Connect folder
@@ -62,14 +60,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 # End of https://www.toptal.com/developers/gitignore/api/r,windows
-#Ignore All Data/Docs/Markdown Files
-input_data/*
-output_data/*
-docs/*
-#Exception to the above rules
-!input_data/.gitkeep
-!output_data/.gitkeep
-!docs/.gitkeep
-!figs_reports/.gitkeep
 .Rdata
 .DS_Store
