@@ -22,7 +22,7 @@ library(gapminder)
 options(dplyr.summarise.inform = FALSE)
 ```
 
-## What about passing multiple data variables to a function argument?
+## What about passing multiple data variables to a function?
 
 > #### 1. SOLUTION A - Pass the dots `(…)`
 
@@ -113,7 +113,7 @@ gap_mean_name_multicols(gapminder, c(continent, year), c(lifeExp, pop, gdpPercap
 >     ignores missing ones
 >
 > -   Can use in combination with `across()` when passing string input
->     to data masking function (e.g. `group_by`)
+>     to a non-<tidy-select> function (e.g. `group_by`)
 
 ```{r strings_helper_funs}
 slice_stringinputs_multgps <- function(data, grouping_variable, select_columns, row_start, row_end) {
@@ -155,7 +155,7 @@ Unexpected data masking occurs when an object in your workspace (which
 you want to use) has the same name as a dataset column.
 
 Because tidyverse/dplyr verbs by default act on data set variables your
-code may end up using the dataset variable not the environment vairable.
+code may end up using the dataset variable not the environment variable.
 
 ```{r unexp_masking, eval = FALSE}
 # Example of Unexpected masking
@@ -250,7 +250,7 @@ gapminder %>%
 ```
 
 For more ggplot examples see:
-`~docs/ggplot_bespoke_functions_examples.docx`
+`docs/ggplot_bespoke_functions_examples.docx`
 
 ------------------------------------------------------------------------
 

@@ -162,7 +162,9 @@ gapminder[continent == "Asia", ] # Does this work?
     variables together.
 
 This is used in tidyverse selection functions such as: `across()`,
-`relocate()`, `rename_with()`, and `select()`
+`relocate()`, `rename_with()`, and `select().` Read all about it in the
+tidyverse
+[documentation](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html "tidy-select documentation"){.uri}
 
 ### Summary
 
@@ -245,7 +247,7 @@ evaluation! It was as simple as adding a few curly braces.
 
 > # EXERCISE BREAKOUT
 >
-> # Please go to `~R/worksheet/prog-todyverse-worksheet.Rmd` and complete Exercises 1 & 2
+> # Please go to `R/worksheet/prog-tidyverse-worksheet.Rmd` and complete Exercises 1 & 2
 
 ------------------------------------------------------------------------
 
@@ -287,7 +289,7 @@ group_mean_name(gapminder, country, lifeExp)
 
 # EXERCISE BREAKOUT
 
-# Please go to `~R/worksheet/prog-todyverse-worksheet.Rmd` and complete Exercise 3
+# Please go to `R/worksheet/prog-tidyverse-worksheet.Rmd` and complete Exercise 3
 
 ------------------------------------------------------------------------
 
@@ -338,11 +340,11 @@ necessarily sequential) columns as input (similar to how tidyverse
 
 In simple cases the solution is obtained with curly-curly `{{ }}`:
 
-> #### UNQUOTED ARUGMENTS as function inputs
+> #### MULTIPLE UNQUOTED ARUGMENTS as function inputs
 >
-> [Unquoted arguments + tidy-select]{.underline}: Embrace the function
-> input variables using `{{ }}` when using tidyverse functions with
-> tidy-select:
+> [A. Unquoted arguments + tidy-select]{.underline}: Embrace the
+> function input variables using `{{ }}` when using tidyverse functions
+> that implement <tidy-select>:
 
 ```{r slice_example_1}
 slice_tidy <- function(data, select_columns, rows) {
@@ -357,26 +359,19 @@ slice_tidy(gapminder, where(is.double), 1:5)
 
 ```
 
-> #### SINGLE QUOTED ARUGMENT as function inputs
+> [B. Unquoted arguments without tidy-select]{.underline}: See
+> `Extras.Rmd`!
+
+> [C. Optional or unknown number of arguments]{.underline}: See
+> `Extras.Rmd`!
+
+> #### MULTIPLE QUOTED ARUGMENTS as function inputs
 >
-> Use `.data[[ var ]]` pronoun as described above to subset the data
-> set.
-
-```{r slice_example_1}
-slice_string <- function(data, select_column, rows) {
-  data %>%
-    select(.data[[ select_column ]]) %>%
-    slice(rows) %>% 
-    arrange(desc(.data[[ select_column ]]))
-}
-
-slice_string(gapminder, "pop", 1:3)
-
-```
+> See `Extras.Rmd`!
 
 ------------------------------------------------------------------------
 
-## What about vector string input and multiple input variables in general? See `Extras.Rmd`
+## 
 
 ## What about ggplot? - it works the same way! See `Extras.Rmd`
 
