@@ -41,12 +41,15 @@ The `get_rectangle` function shown below does not work for unquoted column names
 *Hint: embracing works for more than just a column name - you can even embrace a variable that will hold a filter logical statement (e.g., `body_mass_g > 3000`).*
 
 ```{r}
-# your code here
-get_rectangle <- function() {
+get_rectangle <- function(data, row_filter, column_range = everything()) {
+  # your code here
+  
 }
 
 get_rectangle(penguins, body_mass_g > 3000, species:island)
 ```
+
+Check your answer by running the next cell!
 
 ```{r}
 test_1()
@@ -69,6 +72,8 @@ Create a character vector of the answers above you think are correct, for exampl
 ```{r}
 answer_2 <- c()
 ```
+
+Check your answer:
 
 ```{r}
 test_2()
@@ -99,12 +104,15 @@ The `group_index` function shown below does not work. Your task is to identify w
     }
 
 ```{r}
-# your code here
-group_index <- function() {
+group_index <- function(data, group_col, out_col) {
+  # your code here
+  
 }
 
 group_index(penguins, species, sp_idx)
 ```
+
+Check your answer:
 
 ```{r}
 test_3()
@@ -112,11 +120,12 @@ test_3()
 
 ### Exercise 4 (advanced - see Extras.Rmd)
 
-Take the function you fixed in exercise 1 and **rename it** `get_rectangle2`. Now make it work better with select syntax by added pass the dots, `...`, in place of `column_range`. When you do this, play with inputs to this function, what can you do with `...` as opposed to using a named argument? *Hint: try selecting columns that are not beside each other.* What can't you do? *Hint: think about function argument defaults.*
+Take the function you fixed in exercise 1 and **rename it** `get_rectangle2`. Now make it work better with <tidy-select> syntax by added pass the dots, `...`, in place of `column_range`. When you do this, play with inputs to this function, what can you do with `...` as opposed to using a named argument? *Hint: try selecting columns that are not beside each other.* What can't you do? *Hint: think about function argument defaults.*
 
 ```{r}
-# your code here
-get_rectangle2 <- function() {
+get_rectangle2 <- function(data, row_filter, ...) {
+  # your code here
+  
 }
 
 get_rectangle2(penguins, body_mass_g > 3000, everything())

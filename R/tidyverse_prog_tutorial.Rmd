@@ -4,6 +4,7 @@ output: html_document
 editor_options: 
   markdown: 
     wrap: 72
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE, message=FALSE}
@@ -12,24 +13,6 @@ library(tidyverse)
 library(gapminder)
 options(dplyr.summarise.inform = FALSE)
 ```
-
-# Outline
-
--   Motivation
-    -   Why we love the tidyverse
-    -   Where we start to get into difficulties
--   Background to programming, tidy-style
-    -   Different types of variables
-    -   Non-standard evaluation
-    -   Tidy evaluation
--   Implementing tidy functions
-    -   The curly-curly operator `{{ }}`
--   Data masking: problems and solutions
-    -   Unexpected masking
-    -   Naming variables
-    -   String inputs
--   Tidy selection: problems and solutions
-    -   Functions with arbitrary selection of variables
 
 # Motivation
 
@@ -48,19 +31,18 @@ head(gapminder)
 gapminder %>%
   group_by(year) %>%
   summarise(meanLE = mean(lifeExp, na.rm = T))
+
 gapminder %>% 
   group_by(continent) %>% 
   summarise(meanLE = mean(lifeExp, na.rm = T))
 ```
-
-Simple!
 
 Once we specify the dataset we are working with we can directly type the
 names of the columns and variables in the dataset, without having to
 enclose them in quotation marks or having to define them relative to the
 dataset itself.
 
-## But there's a problem! Trouble in paradise?
+## Doing things twice? Turn that into a function! 
 
 In the example above we calculated the same metric for two different
 grouping variables by repeating the code and changing one element. This
@@ -95,16 +77,33 @@ group_mean(gapminder, "year", "lifeExp")
 
 ```
 
-What now?
+## Trouble in Tidyverse paradise?
 
 ------------------------------------------------------------------------
 
-# Background to programming, tidy-style
+# A bit about meta-programming
 
-To write functions that use tidyverse functions, we need to
+## The tidyverse implements non-standard evaluation (NSE)
 
--   Understand **data masking**
--   Implement **non-standard evaluation**
+### Non-standard evaluation (VERY VERY briefly!)
+
+What is NSE? Very roughly, it is to "*programmatically modify an
+expression or its meaning after it is issued but before it is
+executed*". (You can think of an expression as an R command you might
+type at the prompt or in an R script).
+
+*Not many programming languages give the programmer the power to
+implement, use, and abuse Non-Standard Evaluation - but R does!*
+
+**Tidy evaluation** is a version of Non-Standard Evaluation used in the
+tidyverse (implemented in the rlang package), designed for working with
+data. It provides:
+
+-   [Data Masking]{.underline} to access your data variables directly in
+    the context of the data that you are working with
+
+-   [Tidy Selection]{.underline} to easily choose variables based on
+    their position, name, or type
 
 ### Data masking
 
@@ -121,13 +120,7 @@ two different meanings of the word *variable*:
 
 Data Masking allows you to use data variables as if they were
 environment variables, i.e. it lets you write `my_variable` instead of
-`dataset$my_variable`. This is used in tidyverse functions such as
-
--   `arrange()`, `count()`, `filter()`, `group_by()`, `mutate()`, and
-    `summarise()`
-
-Data masking makes data manipulation easier because it requires less
-typing (cf with base R):
+`dataset$my_variable` = LESS TYPING & BETTER READABILITY
 
 ```{r data_masking, results = FALSE}
 #Compare Base R
@@ -140,27 +133,17 @@ gapminder %>% filter(continent == "Europe", pop < 1000000)
 This is (one of the reasons) why the tidyverse is so popular and easy to
 use!
 
-So how does the tidyverse do this? The answer lies in non-standard
-evaluation.
-
-### NSE = Non-standard evaluation (VERY VERY briefly!)
-
-What is NSE? Very roughly, it is to "*programmatically modify an
-expression or its meaning after it is issued but before it is
-executed*". (You can think of an expression as an R command you might
-type at the prompt or in an R script).
-
-*Not many programming languages give the programmer the power to
-implement, use, and abuse Non-Standard Evaluation - but R does!*
+Used in tidyverse functions such as: `arrange()`, `count()`, `filter()`,
+`group_by()`, `mutate()`, and `summarise()`
 
 And not just in tidyverse - ALSO in base R!
 
 ```{r NSE_baseR, eval=FALSE}
-subset(gapminder, continent=="Asia") # this works because subset delays the 
+subset(gapminder, continent == "Asia") # this works because subset delays the 
                                      # evaluation of continent=="Asia" 
                                      # until it is run when it changes its 
                                      # meaning/environment so it relates to gapminder
-gapminder[continent=="Asia", ] # Does this work?
+gapminder[continent == "Asia", ] # Does this work?
                                # NO! continent is not defined in our environment
 
 #Other base R NSE functions include:
@@ -171,29 +154,30 @@ gapminder[continent=="Asia", ] # Does this work?
 # attach()
 ```
 
-Much more to learn about NSE!! See list of references at end.
+### Tidy Selection
 
-### Tidy Evaluation
+-   Tidy selection functions allow to easily choose variables based on
+    their position, name , or type, e.g. `starts_with("x")` or
+    `is.numeric`, and write code that may use one or many separate data
+    variables together.
 
-Tidy evaluation is a version of NSE used in the tidyverse (implemented
-in the rlang package), designed for working with data. It provides:
+This is used in tidyverse selection functions such as: `across()`,
+`relocate()`, `rename_with()`, and `select().` Read all about it in the
+tidyverse
+[documentation](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html "tidy-select documentation"){.uri}
 
-**Data Masking** to access your data variables directly in the context
-of the data (perhaps modified or grouped earlier in the pipeline) that
-you are working with
-
-**Tidy Selection** to easily choose variables based on their position,
-name, or type, e.g. `starts_with("x")` or `is.numeric`, and write code
-that may use one or many separate data variables together. This is used
-in tidyverse selection functions such as
-
--   `across()`, `relocate()`, `rename_with()`, and `select()`
+### Summary
 
 > Tidyverse functions are built for interactivity! They make interactive
 > data exploration fast and fluid (and fun!)
-
+>
 > But they add some new challenges when you attempt to use them
-> indirectly such as in a for loop or a function.
+> indirectly such as in a function or a for loop.
+
+To write functions that use tidyverse functions, we need to
+
+-   Understand **data masking/tidy selection**
+-   Implement or overcome **non-standard evaluation**
 
 ------------------------------------------------------------------------
 
@@ -203,7 +187,7 @@ If you are writing a function that will call any tidyverse functions,
 you are likely to want or need to make your function work in a similar
 way.
 
-## Standard tidyverse-style functions with curly-curly
+## 1. Data Masking Functions - Solved
 
 In our group mean example above, we want our parameters
 `grouping_variable` and `summary_column` to be treated as data
@@ -226,18 +210,24 @@ named `grouping_variable` and `summary_column` instead of `year` and
 `lifeExp`.
 
 Data-masked code needs to be *delayed* and *transported* to the data
-context. Behind the scenes, dplyr verbs achieve this by capturing the
-blueprint of your code, and resuming its evaluation inside the data
-mask. The example above fails because `group_by()` is capturing the
-wrong piece of blueprint.
+context.
 
-> #### SOLUTION - use the curly-curly operator `{{ }}`
+Behind the scenes, dplyr verbs achieve this by [capturing the blueprint
+of your code, and resuming its evaluation inside the data
+mask]{.underline}. The example above fails because `group_by()` is
+capturing the wrong piece of blueprint.
+
+> ### SOLUTION - use the curly-curly operator `{{ }}`
 >
 > The curly-curly `{{ }}` operator allows you to *tunnel* a data
-> variable through a function. It acts as a wrapper for lower level
-> operators (`enquo()` and `!!`) that function to **quote-and-unquote**
-> the expression pattern: `enquo()` - delays the interpretation of code
-> and captures its blueprint and `!!` modifies the blueprints.
+> variable through a function.
+>
+> It acts to delay the interpretation of code by capturing its
+> blueprint, and then modify the blueprint at the point at which it is
+> evaluate/executed
+>
+> *It acts as a wrapper for lower level operators (`enquo()` and `!!`)
+> that function to **quote-and-unquote** the expression pattern.*
 
 ```{r tidy_eval_soln}
 group_mean <- function(data, grouping_variable, summary_column){
@@ -255,66 +245,23 @@ group_mean(gapminder, continent, pop)
 **Congratulations!** You have just written a function that uses tidy
 evaluation! It was as simple as adding a few curly braces.
 
-Of course, when you try to use this in real life you will encounter
-plenty of difficulties along the way!
-
-Here are some common problems and a few hints and tips.
-
-## Data Masking Problems and Solutions
-
-### **1. Unexpected masking**
-
-```{r unexp_masking, eval = FALSE}
-# Example of Unexpected masking
-# An object in your workspace (which you want to use) has the 
-# same name as a dataset column. 
-n <- sample.int(200, size = 1)
-add_something <- function(data, col) {
-  data %>% mutate(z = {{ col }} * y + n)
-}
-
-data1 <- data.frame(x = 100, y = 10)
-data2 <- data.frame(x = 100, y = 10, n = "argh")
-
-data1 %>% add_something(x) %>% pull(z)
-data2 %>% add_something(x) %>% pull(z)
-
-```
-
-Here the data variable `n` in `data2` has unexpectedly masked our
-environment variable `n`!
-
-> #### SOLUTION - Be explicit in your code
+> # EXERCISE BREAKOUT
 >
-> Use the `.data$` or `.env$` pronouns to explicitly associate variables
-> to data frames or the global environment:
+> # Please go to `R/worksheet/prog-tidyverse-worksheet.Rmd` and complete Exercises 1 & 2
 
-```{r unexp_mask_soln}
-#Specify .data and .env pronouns
-n <- sample.int(200, size=1)
-y <- NULL
+------------------------------------------------------------------------
 
-add_something <- function(data, col) {
-  data %>% mutate(z = {{ col }} * .data$y + .env$n)
-}
+## 2. N**aming output variables in functions**
 
-data1 <- data.frame(x = 100, y = 10)
-data2 <- data.frame(x = 100, y = 10, n = "argh")
-
-data1 %>% add_something(x) %>% pull(y)
-data2 %>% add_something(x) %>% pull(y)
-```
-
-### **2. Naming of variables in functions**
-
-You may want to construct the name of a variable from some data or
-environmental variables.
+You may want to construct the name of a variable from the data variable.
 
 ```{r name_assignment}
 group_mean_name <- function(data, grouping_variable, summary_column) {
+  
   result_name <- paste0("mean_", names(data %>% select( {{ summary_column }} )))
   #print the result_name to screen
   print(result_name)
+  
   data %>%
     group_by({{ grouping_variable }}) %>%
     summarise(result_name = mean({{ summary_column }}, na.rm = T))
@@ -324,7 +271,7 @@ group_mean_name(gapminder, country, lifeExp)
 # Doesn't work! The column has been named 'result_name'.
 ```
 
-> #### Solution - use the walrus operator `:=`
+> ### Solution - use the walrus operator `:=`
 >
 > `:=` enables dynamic naming of variables with tidy evaluation (used
 > when there is only variable to name in the function)
@@ -340,7 +287,13 @@ group_mean_name <- function(data, grouping_variable, summary_column){
 group_mean_name(gapminder, country, lifeExp)
 ```
 
-### **3. Indirection with string inputs**
+# EXERCISE BREAKOUT
+
+# Please go to `R/worksheet/prog-tidyverse-worksheet.Rmd` and complete Exercise 3
+
+------------------------------------------------------------------------
+
+## **3. Indirection with string inputs**
 
 Sometimes you will need to interpret strings as data variable names.
 This may be necessary if the name of the required data variable is read
@@ -369,8 +322,8 @@ function will be used by programmers not familiar with data masking!).
 ```{r indirection_with_strings}
 group_mean <- function(data, grouping_variable, summary_column){
   data %>%
-    group_by(.data[[grouping_variable]]) %>%
-    summarise("mean_{summary_column}" := mean(.data[[summary_column]], na.rm = T))
+    group_by(.data[[ grouping_variable ]]) %>%
+    summarise("mean_{summary_column}" := mean(.data[[ summary_column ]], na.rm = T))
 }
 
 #It works!
@@ -387,72 +340,38 @@ necessarily sequential) columns as input (similar to how tidyverse
 
 In simple cases the solution is obtained with curly-curly `{{ }}`:
 
-> #### Solution 1:
+> #### MULTIPLE UNQUOTED ARUGMENTS as function inputs
 >
-> [Unquoted arguments + tidy-select]{.underline}: Embrace the function
-> input variables using `{{ }}` when using tidyverse functions with
-> tidy-select:
+> [A. Unquoted arguments + tidy-select]{.underline}: Embrace the
+> function input variables using `{{ }}` when using tidyverse functions
+> that implement <tidy-select>:
 
 ```{r slice_example_1}
-slice_fun_tidy <- function(data, select_columns, rows) {
+slice_tidy <- function(data, select_columns, rows) {
   data %>%
     ## select() uses <tidy-select>
     select({{ select_columns }}) %>%
-    slice(rows)
+    slice(rows) 
 }
 
-slice_fun_tidy(gapminder, lifeExp:gdpPercap, 1)
-slice_fun_tidy(gapminder, where(is.double), 1)
+slice_tidy(gapminder, lifeExp:gdpPercap, 1)
+slice_tidy(gapminder, where(is.double), 1:5)
 
 ```
 
-> #### Solution 2:
+> [B. Unquoted arguments without tidy-select]{.underline}: See
+> `Extras.Rmd`!
+
+> [C. Optional or unknown number of arguments]{.underline}: See
+> `Extras.Rmd`!
+
+> #### MULTIPLE QUOTED ARUGMENTS as function inputs
 >
-> [Unquoted arguments more generally]{.underline}: Use across() and
-> `{{ }}` to combine the function input variables when using tidyverse
-> functions WITHOUT tidy-select:
+> See `Extras.Rmd`!
 
-```{r slice_example_2}
-slice_fun_untidy <- function(data, grouping_variable, rows) {
-  data %>%
-    ## group_by() doesn't use <tidy-select>
-    group_by(across({{ grouping_variable }})) %>%
-    slice(rows)
-}
+------------------------------------------------------------------------
 
-slice_fun_untidy(gapminder, c(country,year), 1)
-
-```
-
-> #### Solution 3:
->
-> [Quoted arguments]{.underline}: Use `all_of()/any_of()` when the input
-> is a list of strings giving the variable names (or you don't want to
-> propagate data masking).
->
-> -   `all_of()` acts on all of the columns listed (they must all
->     exist).
-> -   `any_of()` acts on all of the columns listed, if they exist, and
->     ignores missing ones
-
-```{r}
-slice_stringinputs <- function(data, columns, rows) {
-  data %>%
-    select(all_of(columns)) %>%
-    slice(rows)
-}
-
-slice_stringinputs(gapminder, c("country", "year"), 1)
-
-## Again you need 'across' when using non-<tidy-select> functions
-slice_stringinputs <- function(data, columns, rows) {
-  data %>%
-    group_by(across(all_of(columns))) %>%
-    slice(rows)
-}
-slice_stringinputs(gapminder, c("country", "year"), 1)
-
-```
+## 
 
 ## What about ggplot? - it works the same way! See `Extras.Rmd`
 
