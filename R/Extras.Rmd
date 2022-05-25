@@ -24,7 +24,16 @@ options(dplyr.summarise.inform = FALSE)
 
 ## What about passing multiple data variables to a function?
 
-> #### 1. SOLUTION A - Pass the dots `(…)`
+> #### SOLUTION A - Use curly-curly `{{ }}` (see main tutorial)
+>
+> [Ideal for:]{.underline} Arguments which specify groups of (unquoted)
+> data variables, to be passed on to <tidy-select> tidyverse functions
+> like `select()`, `rename_with()` or `relocate()` without modification
+
+> #### SOLUTION B - Pass the dots `(…)`
+>
+> [Ideal for:]{.underline} Unknown number of (unquoted) arguments,
+> and/or arguments with names. Let the tidyverse deal with it!
 
 ```{r pass_the_dots}
 #The dots are the last input parameter in the function call
@@ -39,20 +48,25 @@ grouped_mean_dots(gapminder, pop, continent, year)
 #Can also pass single inputs to (...)
 grouped_mean_dots(gapminder, pop, continent)
 
-# Careful with string input vs data variables
-# What is this doing?
-grouped_mean_dots(gapminder, pop, "continent", "year")
-#c.f.
-mean(gapminder$pop)
+#Can pass through named arguments to be handled by tidyverse
+slice_rename_dots <- function(data, rows, ...) {
+  data %>%
+    rename(...) %>%
+    slice(rows)
+}
+slice_rename_dots(gapminder, 1:5, ctry=country, region=continent, yr=year)
 ```
 
--   Note that using `(…)` perpetuates NSE/Data-masking to your bespoke
-    function.
+-   NOTE that you can only pass one set of inputs to the `(...)` - so you
+    can't use it to specify group variables *and* summary variables!
 
--   NOTE also that you can only pass one set of inputs to the (...) - so
-    you can't use it to specify group variables *and* summary variables!
-
-> #### 2. SOLUTION B - use `across()`
+> #### SOLUTION C - use `across()`
+>
+> [Ideal for]{.underline}: Arguments which specify groups of (unquoted)
+> data variables, that you want to pass to a tidyverse function that
+> does not implement <tidy-select> (so you can't use `{{ }}`). You may not
+> want to pass the dots (e.g. if you want to use them for another
+> purpose like passing to ggplot)
 
 ```{r multi_gps_across}
 gap_means <- function(data, grouping_variables, summary_columns){
@@ -81,9 +95,9 @@ with single variables)
 
 ```{r multi_gps_naming}
 # Use the .names = "" option 
-gap_mean_name_multicols <- function(data, grouping_variable, summary_columns) {
+gap_mean_name_multicols <- function(data, grouping_variables, summary_columns) {
   data %>% 
-    group_by(across({{grouping_variable}})) %>% 
+    group_by(across({{grouping_variables}})) %>% 
     summarise(across({{ summary_columns }}, 
                      ~ mean(., na.rm = TRUE), 
                      .names = "mean_{.col}"))
@@ -93,11 +107,10 @@ gap_mean_name_multicols(gapminder, c(continent, year), c(lifeExp, pop, gdpPercap
 
 ```
 
-> #### 3. SOLUTION C - Use `all_of()/any_of()`for string vector input:
+> #### SOLUTION D - Use `all_of()/any_of()`for string vector input:
 >
-> [To allow a vector of strings as function input]{.underline}: Use
-> `all_of()/any_of()` (or when you don't want to propagate data
-> masking).
+> [Ideal for]{.underline}: Arguments which specify groups of QUOTED
+> data variables
 >
 > When we have a vector of string inputs we can't use the `.data[[ ]]`
 > trick we used for single string input. The `.data` pronoun can only be
@@ -277,47 +290,34 @@ life_v_pop(gapminder)
 life_v_pop(mtcars)
 ```
 
-#### Not if you can use column-wise mapping functions (scoped dplyr verbs)
+#### Not if you can select the columns you need using across() with tidy-select
 
--   Scoped verbs for `mutate_` / `summarise_` / `filter_` / `group_by_`
+  -   across(everything(), mean) --\> map over all columns
 
-    -   `_all` --\> map over all columns
+  -   across(where(is.numeric), sd) --\> map over columns selected by condition
 
-    -   `_if` --\> map over columns selected by condition
-
-    -   `_at` --\> map over a custom selection
-
-    -   No data masking = take objects (not blueprints)
+  -   across(c(country, continent), to_upper) --\> map over a custom selection
 
 ```{r nonNSE_function_alternatives}
 #Scale all numeric variables by SD (function will work on any dataset)
 my_scale <- function(data){
-  data %>% mutate_if(is.numeric, ~. / sd(.))
+  data %>% mutate(across(where(is.numeric), sd, .names="sd_{.col}"))
 }
 
 my_scale(gapminder)
 my_scale(mtcars)
 
-# Don't necessarily need to wrap in a function...
-iris %>% mutate_if(is.numeric, ~. / sd(.))
 
-#Another example -> mean of all numeric cols by all grouping variables
+#Another example -> mean of all numeric cols, grouped by all factor variables
 my_gp_summarise <- function(data){
   data %>% 
-    group_by_if(is.factor) %>% 
-    summarise_if(is.numeric, mean)
+    group_by(across(where(is.factor))) %>% 
+    summarise(across(where(is.numeric), mean, .names="mean_{.col}"))
 }
 
 # works on any dataset
 my_gp_summarise(gapminder)
 my_gp_summarise(mtcars)
-
-#Can use string vectors directly
-my_summarise <- function(data, variables){
-  data %>% summarise_at(variables, mean)
-}
-
-my_summarise(gapminder, c("lifeExp", "pop"))
 
 ```
 
@@ -363,15 +363,13 @@ for loop:
 ```{r for_loop_replaced}
 columns <- names(gapminder)[4:6]
 gapminder %>%
-  summarise(across(all_of(columns), mean))
+  summarise(across(all_of(columns), mean, .names="{.col}.mean"))
 
-# or, if we have parameters, use a dot to represent the current variable
+# or, if we have parameters, use a dot to represent the current data variable
 gapminder %>%
-    summarise(across(all_of(columns), ~ mean(., na.rm = T)))
+    summarise(across(all_of(columns), ~ mean(., na.rm = T), .names="{.col}.mean"))
 ```
 
 > This actually means that for loops are rarely needed!
 
 ------------------------------------------------------------------------
-
-## 
