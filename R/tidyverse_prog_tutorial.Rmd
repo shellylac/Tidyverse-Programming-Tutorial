@@ -42,7 +42,7 @@ names of the columns and variables in the dataset, without having to
 enclose them in quotation marks or having to define them relative to the
 dataset itself.
 
-## Doing things twice? Turn that into a function! 
+## Doing things twice? Turn that into a function!
 
 In the example above we calculated the same metric for two different
 grouping variables by repeating the code and changing one element. This
@@ -50,12 +50,7 @@ isn't good coding practice. When we find ourselves repeating code we
 should look at using some kind of iteration method or writing a bespoke
 function.
 
-Also, we might want to get the mean of population size and GDP per
-capita as well as life expectancy across continents and years. Or we
-might want to calculate it by countries AND years. We shouldn't repeat
-the above code that many times! We need to write re-usable code.
-
-SO let's see what happens when we try to turn the above code into a
+So let's see what happens when we try to turn the above code into a
 function:
 
 ```{r try_function, eval=FALSE}
@@ -113,7 +108,7 @@ two different meanings of the word *variable*:
 -   **environment variables** are programming variables that live in an
     environment. They are often created with `<-` but they may also be
     function arguments, function names, or even built-in names such as
-    `TRUE`.
+    `TRUE/FALSE`.
 
 -   **data variables** are the variables that are part of a particular
     data frame (the identifiers of the columns).
@@ -210,10 +205,8 @@ named `grouping_variable` and `summary_column` instead of `year` and
 `lifeExp`.
 
 Data-masked code needs to be *delayed* and *transported* to the data
-context.
-
-Behind the scenes, dplyr verbs achieve this by [capturing the blueprint
-of your code, and resuming its evaluation inside the data
+context. Behind the scenes, dplyr verbs achieve this by [capturing the
+blueprint of your code, and resuming its evaluation inside the data
 mask]{.underline}. The example above fails because `group_by()` is
 capturing the wrong piece of blueprint.
 
@@ -247,7 +240,7 @@ evaluation! It was as simple as adding a few curly braces.
 
 > # EXERCISE BREAKOUT
 >
-> # Please go to `R/worksheet/prog-tidyverse-worksheet.Rmd` and complete Exercises 1 & 2
+> ### Please go to `R/worksheet/prog-tidyverse-worksheet.Rmd` and complete Exercises 1 & 2
 
 ------------------------------------------------------------------------
 
@@ -289,7 +282,7 @@ group_mean_name(gapminder, country, lifeExp)
 
 # EXERCISE BREAKOUT
 
-# Please go to `R/worksheet/prog-tidyverse-worksheet.Rmd` and complete Exercise 3
+### Please go to `R/worksheet/prog-tidyverse-worksheet.Rmd` and complete Exercise 3
 
 ------------------------------------------------------------------------
 
