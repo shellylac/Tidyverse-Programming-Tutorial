@@ -366,36 +366,6 @@ pre code {
 </div>
 
 
-<div id="outline" class="section level1">
-<h1>Outline</h1>
-<ul>
-<li>Motivation
-<ul>
-<li>Why we love the tidyverse</li>
-<li>Where we start to get into difficulties</li>
-</ul></li>
-<li>Background to programming, tidy-style
-<ul>
-<li>Different types of variables</li>
-<li>Non-standard evaluation</li>
-<li>Tidy evaluation</li>
-</ul></li>
-<li>Implementing tidy functions
-<ul>
-<li>The curly-curly operator <code>{{ }}</code></li>
-</ul></li>
-<li>Data masking: problems and solutions
-<ul>
-<li>Unexpected masking</li>
-<li>Naming variables</li>
-<li>String inputs</li>
-</ul></li>
-<li>Tidy selection: problems and solutions
-<ul>
-<li>Functions with arbitrary selection of variables</li>
-</ul></li>
-</ul>
-</div>
 <div id="motivation" class="section level1">
 <h1>Motivation</h1>
 <div id="tidyverse-super-easy-to-work-with" class="section level2">
@@ -405,7 +375,7 @@ continent or per year for the <a href="https://www.gapminder.org/data/documentat
 dataset:</p>
 <pre class="r"><code># Check what the dataset looks like
 head(gapminder)</code></pre>
-<pre><code>## # A tibble: 6 × 6
+<pre><code>## # A tibble: 6 x 6
 ##   country     continent  year lifeExp      pop gdpPercap
 ##   &lt;fct&gt;       &lt;fct&gt;     &lt;int&gt;   &lt;dbl&gt;    &lt;int&gt;     &lt;dbl&gt;
 ## 1 Afghanistan Asia       1952    28.8  8425333      779.
@@ -418,7 +388,7 @@ head(gapminder)</code></pre>
 gapminder %&gt;%
   group_by(year) %&gt;%
   summarise(meanLE = mean(lifeExp, na.rm = T))</code></pre>
-<pre><code>## # A tibble: 12 × 2
+<pre><code>## # A tibble: 12 x 2
 ##     year meanLE
 ##    &lt;int&gt;  &lt;dbl&gt;
 ##  1  1952   49.1
@@ -436,7 +406,7 @@ gapminder %&gt;%
 <pre class="r"><code>gapminder %&gt;% 
   group_by(continent) %&gt;% 
   summarise(meanLE = mean(lifeExp, na.rm = T))</code></pre>
-<pre><code>## # A tibble: 5 × 2
+<pre><code>## # A tibble: 5 x 2
 ##   continent meanLE
 ##   &lt;fct&gt;      &lt;dbl&gt;
 ## 1 Africa      48.9
@@ -444,24 +414,19 @@ gapminder %&gt;%
 ## 3 Asia        60.1
 ## 4 Europe      71.9
 ## 5 Oceania     74.3</code></pre>
-<p>Simple!</p>
 <p>Once we specify the dataset we are working with we can directly type
 the names of the columns and variables in the dataset, without having to
 enclose them in quotation marks or having to define them relative to the
 dataset itself.</p>
 </div>
-<div id="but-theres-a-problem-trouble-in-paradise" class="section level2">
-<h2>But there’s a problem! Trouble in paradise?</h2>
+<div id="doing-things-twice-turn-that-into-a-function" class="section level2">
+<h2>Doing things twice? Turn that into a function!</h2>
 <p>In the example above we calculated the same metric for two different
 grouping variables by repeating the code and changing one element. This
 isn’t good coding practice. When we find ourselves repeating code we
 should look at using some kind of iteration method or writing a bespoke
 function.</p>
-<p>Also, we might want to get the mean of population size and GDP per
-capita as well as life expectancy across continents and years. Or we
-might want to calculate it by countries AND years. We shouldn’t repeat
-the above code that many times! We need to write re-usable code.</p>
-<p>SO let’s see what happens when we try to turn the above code into a
+<p>So let’s see what happens when we try to turn the above code into a
 function:</p>
 <pre class="r"><code># Place code within function
 
@@ -478,17 +443,34 @@ group_mean(gapminder, year, lifeExp)
 # What about if we place the arguments in quotes?
 group_mean(gapminder, &quot;year&quot;, &quot;lifeExp&quot;)
 # Still no. </code></pre>
-<p>What now?</p>
+</div>
+<div id="trouble-in-tidyverse-paradise" class="section level2">
+<h2>Trouble in Tidyverse paradise?</h2>
 <hr />
 </div>
 </div>
-<div id="background-to-programming-tidy-style" class="section level1">
-<h1>Background to programming, tidy-style</h1>
-<p>To write functions that use tidyverse functions, we need to</p>
+<div id="a-bit-about-meta-programming" class="section level1">
+<h1>A bit about meta-programming</h1>
+<div id="the-tidyverse-implements-non-standard-evaluation-nse" class="section level2">
+<h2>The tidyverse implements non-standard evaluation (NSE)</h2>
+<div id="non-standard-evaluation-very-very-briefly" class="section level3">
+<h3>Non-standard evaluation (VERY VERY briefly!)</h3>
+<p>What is NSE? Very roughly, it is to “<em>programmatically modify an
+expression or its meaning after it is issued but before it is
+executed</em>”. (You can think of an expression as an R command you
+might type at the prompt or in an R script).</p>
+<p><em>Not many programming languages give the programmer the power to
+implement, use, and abuse Non-Standard Evaluation - but R does!</em></p>
+<p><strong>Tidy evaluation</strong> is a version of Non-Standard
+Evaluation used in the tidyverse (implemented in the rlang package),
+designed for working with data. It provides:</p>
 <ul>
-<li>Understand <strong>data masking</strong></li>
-<li>Implement <strong>non-standard evaluation</strong></li>
+<li><p><u>Data Masking</u> to access your data variables directly in the
+context of the data that you are working with</p></li>
+<li><p><u>Tidy Selection</u> to easily choose variables based on their
+position, name, or type</p></li>
 </ul>
+</div>
 <div id="data-masking" class="section level3">
 <h3>Data masking</h3>
 <p>The key idea behind data masking is that it blurs the line between
@@ -497,21 +479,14 @@ the two different meanings of the word <em>variable</em>:</p>
 <li><p><strong>environment variables</strong> are programming variables
 that live in an environment. They are often created with
 <code>&lt;-</code> but they may also be function arguments, function
-names, or even built-in names such as <code>TRUE</code>.</p></li>
+names, or even built-in names such as <code>TRUE/FALSE</code>.</p></li>
 <li><p><strong>data variables</strong> are the variables that are part
 of a particular data frame (the identifiers of the columns).</p></li>
 </ul>
 <p>Data Masking allows you to use data variables as if they were
 environment variables, i.e. it lets you write <code>my_variable</code>
-instead of <code>dataset$my_variable</code>. This is used in tidyverse
-functions such as</p>
-<ul>
-<li><code>arrange()</code>, <code>count()</code>, <code>filter()</code>,
-<code>group_by()</code>, <code>mutate()</code>, and
-<code>summarise()</code></li>
-</ul>
-<p>Data masking makes data manipulation easier because it requires less
-typing (cf with base R):</p>
+instead of <code>dataset$my_variable</code> = LESS TYPING &amp; BETTER
+READABILITY</p>
 <pre class="r"><code>#Compare Base R
 gapminder[gapminder$continent == &quot;Europe&quot; &amp; gapminder$pop &lt; 1000000, ]
 
@@ -519,23 +494,15 @@ gapminder[gapminder$continent == &quot;Europe&quot; &amp; gapminder$pop &lt; 100
 gapminder %&gt;% filter(continent == &quot;Europe&quot;, pop &lt; 1000000)</code></pre>
 <p>This is (one of the reasons) why the tidyverse is so popular and easy
 to use!</p>
-<p>So how does the tidyverse do this? The answer lies in non-standard
-evaluation.</p>
-</div>
-<div id="nse-non-standard-evaluation-very-very-briefly" class="section level3">
-<h3>NSE = Non-standard evaluation (VERY VERY briefly!)</h3>
-<p>What is NSE? Very roughly, it is to “<em>programmatically modify an
-expression or its meaning after it is issued but before it is
-executed</em>”. (You can think of an expression as an R command you
-might type at the prompt or in an R script).</p>
-<p><em>Not many programming languages give the programmer the power to
-implement, use, and abuse Non-Standard Evaluation - but R does!</em></p>
+<p>Used in tidyverse functions such as: <code>arrange()</code>,
+<code>count()</code>, <code>filter()</code>, <code>group_by()</code>,
+<code>mutate()</code>, and <code>summarise()</code></p>
 <p>And not just in tidyverse - ALSO in base R!</p>
-<pre class="r"><code>subset(gapminder, continent==&quot;Asia&quot;) # this works because subset delays the 
+<pre class="r"><code>subset(gapminder, continent == &quot;Asia&quot;) # this works because subset delays the 
                                      # evaluation of continent==&quot;Asia&quot; 
                                      # until it is run when it changes its 
                                      # meaning/environment so it relates to gapminder
-gapminder[continent==&quot;Asia&quot;, ] # Does this work?
+gapminder[continent == &quot;Asia&quot;, ] # Does this work?
                                # NO! continent is not defined in our environment
 
 #Other base R NSE functions include:
@@ -544,34 +511,35 @@ gapminder[continent==&quot;Asia&quot;, ] # Does this work?
 # lm()
 # and the old school (for those of us who learnt R way before the tidyverse!):
 # attach()</code></pre>
-<p>Much more to learn about NSE!! See list of references at end.</p>
 </div>
-<div id="tidy-evaluation" class="section level3">
-<h3>Tidy Evaluation</h3>
-<p>Tidy evaluation is a version of NSE used in the tidyverse
-(implemented in the rlang package), designed for working with data. It
-provides:</p>
-<p><strong>Data Masking</strong> to access your data variables directly
-in the context of the data (perhaps modified or grouped earlier in the
-pipeline) that you are working with</p>
-<p><strong>Tidy Selection</strong> to easily choose variables based on
-their position, name, or type, e.g. <code>starts_with(&quot;x&quot;)</code> or
-<code>is.numeric</code>, and write code that may use one or many
-separate data variables together. This is used in tidyverse selection
-functions such as</p>
+<div id="tidy-selection" class="section level3">
+<h3>Tidy Selection</h3>
 <ul>
-<li><code>across()</code>, <code>relocate()</code>,
-<code>rename_with()</code>, and <code>select()</code></li>
+<li>Tidy selection functions allow to easily choose variables based on
+their position, name , or type, e.g. <code>starts_with(&quot;x&quot;)</code> or
+<code>is.numeric</code>, and write code that may use one or many
+separate data variables together.</li>
 </ul>
+<p>This is used in tidyverse selection functions such as:
+<code>across()</code>, <code>relocate()</code>,
+<code>rename_with()</code>, and <code>select().</code> Read all about it
+in the tidyverse <a href="https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html" class="uri" title="tidy-select documentation">documentation</a></p>
+</div>
+<div id="summary" class="section level3">
+<h3>Summary</h3>
 <blockquote>
 <p>Tidyverse functions are built for interactivity! They make
 interactive data exploration fast and fluid (and fun!)</p>
-</blockquote>
-<blockquote>
 <p>But they add some new challenges when you attempt to use them
-indirectly such as in a for loop or a function.</p>
+indirectly such as in a function or a for loop.</p>
 </blockquote>
+<p>To write functions that use tidyverse functions, we need to</p>
+<ul>
+<li>Understand <strong>data masking/tidy selection</strong></li>
+<li>Implement or overcome <strong>non-standard evaluation</strong></li>
+</ul>
 <hr />
+</div>
 </div>
 </div>
 <div id="implementing-tidy-functions" class="section level1">
@@ -579,8 +547,8 @@ indirectly such as in a for loop or a function.</p>
 <p>If you are writing a function that will call any tidyverse functions,
 you are likely to want or need to make your function work in a similar
 way.</p>
-<div id="standard-tidyverse-style-functions-with-curly-curly" class="section level2">
-<h2>Standard tidyverse-style functions with curly-curly</h2>
+<div id="data-masking-functions---solved" class="section level2">
+<h2>1. Data Masking Functions - Solved</h2>
 <p>In our group mean example above, we want our parameters
 <code>grouping_variable</code> and <code>summary_column</code> to be
 treated as data variables. To do this we will implement the function
@@ -600,18 +568,20 @@ arguments to be data variables and look for columns named
 of <code>year</code> and <code>lifeExp</code>.</p>
 <p>Data-masked code needs to be <em>delayed</em> and
 <em>transported</em> to the data context. Behind the scenes, dplyr verbs
-achieve this by capturing the blueprint of your code, and resuming its
-evaluation inside the data mask. The example above fails because
+achieve this by <u>capturing the blueprint of your code, and resuming
+its evaluation inside the data mask</u>. The example above fails because
 <code>group_by()</code> is capturing the wrong piece of blueprint.</p>
 <blockquote>
-<h4 id="solution---use-the-curly-curly-operator">SOLUTION - use the
-curly-curly operator <code>{{ }}</code></h4>
+<h3 id="solution---use-the-curly-curly-operator">SOLUTION - use the
+curly-curly operator <code>{{ }}</code></h3>
 <p>The curly-curly <code>{{ }}</code> operator allows you to
-<em>tunnel</em> a data variable through a function. It acts as a wrapper
-for lower level operators (<code>enquo()</code> and <code>!!</code>)
-that function to <strong>quote-and-unquote</strong> the expression
-pattern: <code>enquo()</code> - delays the interpretation of code and
-captures its blueprint and <code>!!</code> modifies the blueprints.</p>
+<em>tunnel</em> a data variable through a function.</p>
+<p>It acts to delay the interpretation of code by capturing its
+blueprint, and then modify the blueprint at the point at which it is
+evaluate/executed</p>
+<p><em>It acts as a wrapper for lower level operators
+(<code>enquo()</code> and <code>!!</code>) that function to
+<strong>quote-and-unquote</strong> the expression pattern.</em></p>
 </blockquote>
 <pre class="r"><code>group_mean &lt;- function(data, grouping_variable, summary_column){
   data %&gt;%
@@ -621,7 +591,7 @@ captures its blueprint and <code>!!</code> modifies the blueprints.</p>
 
 #It works!
 group_mean(gapminder, year, lifeExp)</code></pre>
-<pre><code>## # A tibble: 12 × 2
+<pre><code>## # A tibble: 12 x 2
 ##     year `mean(lifeExp, na.rm = T)`
 ##    &lt;int&gt;                      &lt;dbl&gt;
 ##  1  1952                       49.1
@@ -637,7 +607,7 @@ group_mean(gapminder, year, lifeExp)</code></pre>
 ## 11  2002                       65.7
 ## 12  2007                       67.0</code></pre>
 <pre class="r"><code>group_mean(gapminder, continent, pop)</code></pre>
-<pre><code>## # A tibble: 5 × 2
+<pre><code>## # A tibble: 5 x 2
 ##   continent `mean(pop, na.rm = T)`
 ##   &lt;fct&gt;                      &lt;dbl&gt;
 ## 1 Africa                  9916003.
@@ -648,60 +618,24 @@ group_mean(gapminder, year, lifeExp)</code></pre>
 <p><strong>Congratulations!</strong> You have just written a function
 that uses tidy evaluation! It was as simple as adding a few curly
 braces.</p>
-<p>Of course, when you try to use this in real life you will encounter
-plenty of difficulties along the way!</p>
-<p>Here are some common problems and a few hints and tips.</p>
-</div>
-<div id="data-masking-problems-and-solutions" class="section level2">
-<h2>Data Masking Problems and Solutions</h2>
-<div id="unexpected-masking" class="section level3">
-<h3><strong>1. Unexpected masking</strong></h3>
-<pre class="r"><code># Example of Unexpected masking
-# An object in your workspace (which you want to use) has the 
-# same name as a dataset column. 
-n &lt;- sample.int(200, size = 1)
-add_something &lt;- function(data, col) {
-  data %&gt;% mutate(z = {{ col }} * y + n)
-}
-
-data1 &lt;- data.frame(x = 100, y = 10)
-data2 &lt;- data.frame(x = 100, y = 10, n = &quot;argh&quot;)
-
-data1 %&gt;% add_something(x) %&gt;% pull(z)
-data2 %&gt;% add_something(x) %&gt;% pull(z)</code></pre>
-<p>Here the data variable <code>n</code> in <code>data2</code> has
-unexpectedly masked our environment variable <code>n</code>!</p>
 <blockquote>
-<h4 id="solution---be-explicit-in-your-code">SOLUTION - Be explicit in
-your code</h4>
-<p>Use the <code>.data$</code> or <code>.env$</code> pronouns to
-explicitly associate variables to data frames or the global
-environment:</p>
+<h1 id="exercise-breakout">EXERCISE BREAKOUT</h1>
+<h3 id="please-go-to-rworksheetprog-tidyverse-worksheet.rmd-and-complete-exercises-1-2">Please
+go to <code>R/worksheet/prog-tidyverse-worksheet.Rmd</code> and complete
+Exercises 1 &amp; 2</h3>
 </blockquote>
-<pre class="r"><code>#Specify .data and .env pronouns
-n &lt;- sample.int(200, size=1)
-y &lt;- NULL
-
-add_something &lt;- function(data, col) {
-  data %&gt;% mutate(z = {{ col }} * .data$y + .env$n)
-}
-
-data1 &lt;- data.frame(x = 100, y = 10)
-data2 &lt;- data.frame(x = 100, y = 10, n = &quot;argh&quot;)
-
-data1 %&gt;% add_something(x) %&gt;% pull(y)</code></pre>
-<pre><code>## [1] 10</code></pre>
-<pre class="r"><code>data2 %&gt;% add_something(x) %&gt;% pull(y)</code></pre>
-<pre><code>## [1] 10</code></pre>
+<hr />
 </div>
-<div id="naming-of-variables-in-functions" class="section level3">
-<h3><strong>2. Naming of variables in functions</strong></h3>
-<p>You may want to construct the name of a variable from some data or
-environmental variables.</p>
+<div id="naming-output-variables-in-functions" class="section level2">
+<h2>2. N<strong>aming output variables in functions</strong></h2>
+<p>You may want to construct the name of a variable from the data
+variable.</p>
 <pre class="r"><code>group_mean_name &lt;- function(data, grouping_variable, summary_column) {
+  
   result_name &lt;- paste0(&quot;mean_&quot;, names(data %&gt;% select( {{ summary_column }} )))
   #print the result_name to screen
   print(result_name)
+  
   data %&gt;%
     group_by({{ grouping_variable }}) %&gt;%
     summarise(result_name = mean({{ summary_column }}, na.rm = T))
@@ -709,7 +643,7 @@ environmental variables.</p>
 
 group_mean_name(gapminder, country, lifeExp)</code></pre>
 <pre><code>## [1] &quot;mean_lifeExp&quot;</code></pre>
-<pre><code>## # A tibble: 142 × 2
+<pre><code>## # A tibble: 142 x 2
 ##    country     result_name
 ##    &lt;fct&gt;             &lt;dbl&gt;
 ##  1 Afghanistan        37.5
@@ -722,11 +656,11 @@ group_mean_name(gapminder, country, lifeExp)</code></pre>
 ##  8 Bahrain            65.6
 ##  9 Bangladesh         49.8
 ## 10 Belgium            73.6
-## # … with 132 more rows</code></pre>
+## # ... with 132 more rows</code></pre>
 <pre class="r"><code># Doesn&#39;t work! The column has been named &#39;result_name&#39;.</code></pre>
 <blockquote>
-<h4 id="solution---use-the-walrus-operator">Solution - use the walrus
-operator <code>:=</code></h4>
+<h3 id="solution---use-the-walrus-operator">Solution - use the walrus
+operator <code>:=</code></h3>
 <p><code>:=</code> enables dynamic naming of variables with tidy
 evaluation (used when there is only variable to name in the
 function)</p>
@@ -739,7 +673,7 @@ group_mean_name &lt;- function(data, grouping_variable, summary_column){
 }
 
 group_mean_name(gapminder, country, lifeExp)</code></pre>
-<pre><code>## # A tibble: 142 × 2
+<pre><code>## # A tibble: 142 x 2
 ##    country     mean_lifeExp
 ##    &lt;fct&gt;              &lt;dbl&gt;
 ##  1 Afghanistan         37.5
@@ -752,10 +686,18 @@ group_mean_name(gapminder, country, lifeExp)</code></pre>
 ##  8 Bahrain             65.6
 ##  9 Bangladesh          49.8
 ## 10 Belgium             73.6
-## # … with 132 more rows</code></pre>
+## # ... with 132 more rows</code></pre>
 </div>
-<div id="indirection-with-string-inputs" class="section level3">
-<h3><strong>3. Indirection with string inputs</strong></h3>
+</div>
+<div id="exercise-breakout-1" class="section level1">
+<h1>EXERCISE BREAKOUT</h1>
+<div id="please-go-to-rworksheetprog-tidyverse-worksheet.rmd-and-complete-exercise-3" class="section level3">
+<h3>Please go to <code>R/worksheet/prog-tidyverse-worksheet.Rmd</code>
+and complete Exercise 3</h3>
+<hr />
+</div>
+<div id="indirection-with-string-inputs" class="section level2">
+<h2><strong>3. Indirection with string inputs</strong></h2>
 <p>Sometimes you will need to interpret strings as data variable names.
 This may be necessary if the name of the required data variable is read
 in from a separate file or from user input, and held within an
@@ -786,13 +728,13 @@ arguments or environment variables) then use <code>:=</code> +
 </blockquote>
 <pre class="r"><code>group_mean &lt;- function(data, grouping_variable, summary_column){
   data %&gt;%
-    group_by(.data[[grouping_variable]]) %&gt;%
-    summarise(&quot;mean_{summary_column}&quot; := mean(.data[[summary_column]], na.rm = T))
+    group_by(.data[[ grouping_variable ]]) %&gt;%
+    summarise(&quot;mean_{summary_column}&quot; := mean(.data[[ summary_column ]], na.rm = T))
 }
 
 #It works!
 group_mean(gapminder, &quot;year&quot;, &quot;lifeExp&quot;)</code></pre>
-<pre><code>## # A tibble: 12 × 2
+<pre><code>## # A tibble: 12 x 2
 ##     year mean_lifeExp
 ##    &lt;int&gt;        &lt;dbl&gt;
 ##  1  1952         49.1
@@ -809,7 +751,6 @@ group_mean(gapminder, &quot;year&quot;, &quot;lifeExp&quot;)</code></pre>
 ## 12  2007         67.0</code></pre>
 <hr />
 </div>
-</div>
 <div id="tidy-selection-allow-arbitrary-selection-of-variables" class="section level2">
 <h2>Tidy Selection: Allow arbitrary selection of variables</h2>
 <p>You might want to create a function that accepts sets of (not
@@ -818,102 +759,50 @@ necessarily sequential) columns as input (similar to how tidyverse
 <p>In simple cases the solution is obtained with curly-curly
 <code>{{ }}</code>:</p>
 <blockquote>
-<h4 id="solution-1">Solution 1:</h4>
-<p><u>Unquoted arguments + tidy-select</u>: Embrace the function input
-variables using <code>{{ }}</code> when using tidyverse functions with
-tidy-select:</p>
+<h4 id="multiple-unquoted-arugments-as-function-inputs">MULTIPLE
+UNQUOTED ARUGMENTS as function inputs</h4>
+<p><u>A. Unquoted arguments + tidy-select</u>: Embrace the function
+input variables using <code>{{ }}</code> when using tidyverse functions
+that implement <tidy-select>:</p>
 </blockquote>
-<pre class="r"><code>slice_fun_tidy &lt;- function(data, select_columns, rows) {
+<pre class="r"><code>slice_tidy &lt;- function(data, select_columns, rows) {
   data %&gt;%
     ## select() uses &lt;tidy-select&gt;
     select({{ select_columns }}) %&gt;%
-    slice(rows)
+    slice(rows) 
 }
 
-slice_fun_tidy(gapminder, lifeExp:gdpPercap, 1)</code></pre>
-<pre><code>## # A tibble: 1 × 3
+slice_tidy(gapminder, lifeExp:gdpPercap, 1)</code></pre>
+<pre><code>## # A tibble: 1 x 3
 ##   lifeExp     pop gdpPercap
 ##     &lt;dbl&gt;   &lt;int&gt;     &lt;dbl&gt;
 ## 1    28.8 8425333      779.</code></pre>
-<pre class="r"><code>slice_fun_tidy(gapminder, where(is.double), 1)</code></pre>
-<pre><code>## # A tibble: 1 × 2
+<pre class="r"><code>slice_tidy(gapminder, where(is.double), 1:5)</code></pre>
+<pre><code>## # A tibble: 5 x 2
 ##   lifeExp gdpPercap
 ##     &lt;dbl&gt;     &lt;dbl&gt;
-## 1    28.8      779.</code></pre>
+## 1    28.8      779.
+## 2    30.3      821.
+## 3    32.0      853.
+## 4    34.0      836.
+## 5    36.1      740.</code></pre>
 <blockquote>
-<h4 id="solution-2">Solution 2:</h4>
-<p><u>Unquoted arguments more generally</u>: Use across() and
-<code>{{ }}</code> to combine the function input variables when using
-tidyverse functions WITHOUT tidy-select:</p>
+<p><u>B. Unquoted arguments without tidy-select</u>: See
+<code>Extras.Rmd</code>!</p>
 </blockquote>
-<pre class="r"><code>slice_fun_untidy &lt;- function(data, grouping_variable, rows) {
-  data %&gt;%
-    ## group_by() doesn&#39;t use &lt;tidy-select&gt;
-    group_by(across({{ grouping_variable }})) %&gt;%
-    slice(rows)
-}
-
-slice_fun_untidy(gapminder, c(country,year), 1)</code></pre>
-<pre><code>## # A tibble: 1,704 × 6
-## # Groups:   country, year [1,704]
-##    country     continent  year lifeExp      pop gdpPercap
-##    &lt;fct&gt;       &lt;fct&gt;     &lt;int&gt;   &lt;dbl&gt;    &lt;int&gt;     &lt;dbl&gt;
-##  1 Afghanistan Asia       1952    28.8  8425333      779.
-##  2 Afghanistan Asia       1957    30.3  9240934      821.
-##  3 Afghanistan Asia       1962    32.0 10267083      853.
-##  4 Afghanistan Asia       1967    34.0 11537966      836.
-##  5 Afghanistan Asia       1972    36.1 13079460      740.
-##  6 Afghanistan Asia       1977    38.4 14880372      786.
-##  7 Afghanistan Asia       1982    39.9 12881816      978.
-##  8 Afghanistan Asia       1987    40.8 13867957      852.
-##  9 Afghanistan Asia       1992    41.7 16317921      649.
-## 10 Afghanistan Asia       1997    41.8 22227415      635.
-## # … with 1,694 more rows</code></pre>
 <blockquote>
-<h4 id="solution-3">Solution 3:</h4>
-<p><u>Quoted arguments</u>: Use <code>all_of()/any_of()</code> when the
-input is a list of strings giving the variable names (or you don’t want
-to propagate data masking).</p>
-<ul>
-<li><code>all_of()</code> acts on all of the columns listed (they must
-all exist).</li>
-<li><code>any_of()</code> acts on all of the columns listed, if they
-exist, and ignores missing ones</li>
-</ul>
+<p><u>C. Optional or unknown number of arguments</u>: See
+<code>Extras.Rmd</code>!</p>
 </blockquote>
-<pre class="r"><code>slice_stringinputs &lt;- function(data, columns, rows) {
-  data %&gt;%
-    select(all_of(columns)) %&gt;%
-    slice(rows)
-}
-
-slice_stringinputs(gapminder, c(&quot;country&quot;, &quot;year&quot;), 1)</code></pre>
-<pre><code>## # A tibble: 1 × 2
-##   country      year
-##   &lt;fct&gt;       &lt;int&gt;
-## 1 Afghanistan  1952</code></pre>
-<pre class="r"><code>## Again you need &#39;across&#39; when using non-&lt;tidy-select&gt; functions
-slice_stringinputs &lt;- function(data, columns, rows) {
-  data %&gt;%
-    group_by(across(all_of(columns))) %&gt;%
-    slice(rows)
-}
-slice_stringinputs(gapminder, c(&quot;country&quot;, &quot;year&quot;), 1)</code></pre>
-<pre><code>## # A tibble: 1,704 × 6
-## # Groups:   country, year [1,704]
-##    country     continent  year lifeExp      pop gdpPercap
-##    &lt;fct&gt;       &lt;fct&gt;     &lt;int&gt;   &lt;dbl&gt;    &lt;int&gt;     &lt;dbl&gt;
-##  1 Afghanistan Asia       1952    28.8  8425333      779.
-##  2 Afghanistan Asia       1957    30.3  9240934      821.
-##  3 Afghanistan Asia       1962    32.0 10267083      853.
-##  4 Afghanistan Asia       1967    34.0 11537966      836.
-##  5 Afghanistan Asia       1972    36.1 13079460      740.
-##  6 Afghanistan Asia       1977    38.4 14880372      786.
-##  7 Afghanistan Asia       1982    39.9 12881816      978.
-##  8 Afghanistan Asia       1987    40.8 13867957      852.
-##  9 Afghanistan Asia       1992    41.7 16317921      649.
-## 10 Afghanistan Asia       1997    41.8 22227415      635.
-## # … with 1,694 more rows</code></pre>
+<blockquote>
+<h4 id="multiple-quoted-arugments-as-function-inputs">MULTIPLE QUOTED
+ARUGMENTS as function inputs</h4>
+<p>See <code>Extras.Rmd</code>!</p>
+</blockquote>
+<hr />
+</div>
+<div id="section" class="section level2">
+<h2></h2>
 </div>
 <div id="what-about-ggplot---it-works-the-same-way-see-extras.rmd" class="section level2">
 <h2>What about ggplot? - it works the same way! See
