@@ -57,15 +57,15 @@ slice_rename_dots <- function(data, rows, ...) {
 slice_rename_dots(gapminder, 1:5, ctry=country, region=continent, yr=year)
 ```
 
--   NOTE that you can only pass one set of inputs to the `(...)` - so you
-    can't use it to specify group variables *and* summary variables!
+-   NOTE that you can only pass one set of inputs to the `(...)` - so
+    you can't use it to specify group variables *and* summary variables!
 
 > #### SOLUTION C - use `across()`
 >
 > [Ideal for]{.underline}: Arguments which specify groups of (unquoted)
 > data variables, that you want to pass to a tidyverse function that
-> does not implement <tidy-select> (so you can't use `{{ }}`). You may not
-> want to pass the dots (e.g. if you want to use them for another
+> does not implement <tidy-select> (so you can't use `{{ }}`). You may
+> not want to pass the dots (e.g. if you want to use them for another
 > purpose like passing to ggplot)
 
 ```{r multi_gps_across}
@@ -109,8 +109,8 @@ gap_mean_name_multicols(gapminder, c(continent, year), c(lifeExp, pop, gdpPercap
 
 > #### SOLUTION D - Use `all_of()/any_of()`for string vector input:
 >
-> [Ideal for]{.underline}: Arguments which specify groups of QUOTED
-> data variables
+> [Ideal for]{.underline}: Arguments which specify groups of QUOTED data
+> variables
 >
 > When we have a vector of string inputs we can't use the `.data[[ ]]`
 > trick we used for single string input. The `.data` pronoun can only be
@@ -274,7 +274,7 @@ For more ggplot examples see:
 -   Need to add checks on inputs (column existence, scale of values) in
     the function
 
-```{r fixed_col_names}
+```{r fixed_col_names, eval=FALSE}
 # Calculate lifeExp / pop (a contrived example)
 
 life_v_pop <- function(data){
@@ -292,11 +292,13 @@ life_v_pop(mtcars)
 
 #### Not if you can select the columns you need using across() with tidy-select
 
-  -   across(everything(), mean) --\> map over all columns
+-   across(everything(), mean) --\> map over all columns
 
-  -   across(where(is.numeric), sd) --\> map over columns selected by condition
+-   across(where(is.numeric), sd) --\> map over columns selected by
+    condition
 
-  -   across(c(country, continent), to_upper) --\> map over a custom selection
+-   across(c(country, continent), to_upper) --\> map over a custom
+    selection
 
 ```{r nonNSE_function_alternatives}
 #Scale all numeric variables by SD (function will work on any dataset)
@@ -327,7 +329,7 @@ my_gp_summarise(mtcars)
 
 We might naively try to summarise two columns in a for loop:
 
-```{r for_loop}
+```{r for_loop, eval=FALSE}
 columns <- names(gapminder)[4:6]
 out <- rep(list(NULL), 3)
 
